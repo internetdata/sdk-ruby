@@ -1,0 +1,32 @@
+name: Integration
+
+# Exercises the gem as PUBLISHED on RubyGems, against staging. CI covers this
+# working tree; nothing there would notice a gemspec whose `files` list forgets
+# half the library, a require path a consumer cannot resolve, or a release that
+# never landed.
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  workflow_dispatch:
+  schedule:
+    # Off the hour on purpose: scheduled runs bunched at :00 are queued behind
+    # everyone else's and can be dropped entirely under load.
+    - cron: '41 6 * * *'
+
+jobs:
+  staging:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.4'
+      # No bundler cache: the point is the install a stranger gets. The script
+      # skips with a reason when nothing is published yet, and the suite skips
+      # from inside minitest when the key is missing. A secret that does not
+      # exist interpolates to an empty string here, which counts as absent.
+      - run: ./scripts/run.sh
+        working-directory: integration
+        env:
+          INTERNETDATA_STAGING_KEY: ${{ secrets.INTERNETDATA_STAGING_KEY }}
