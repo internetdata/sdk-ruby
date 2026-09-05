@@ -154,8 +154,20 @@ class DatabaseTest < Minitest::Test
     refute error.retryable?
   end
 
-  def test_a_client_needs_a_key
-    assert_raises(ArgumentError) { InternetData::Client.new(api_key: nil) }
-    assert_raises(ArgumentError) { InternetData::Client.new(api_key: '  ') }
+  # Today every endpoint is licensed, so a keyless client only ever gets a 401.
+  # It still has to BUILD and to send no credential at all: the generated
+  # Configuration applies its schemes whatever they hold, so without the
+  # `auth_settings` gate this sends `Authorization: Bearer ` and `?apikey=` -
+  # which is exactly what an unset `${{ secrets.X }}` interpolates to.
+  def test_a_keyless_client_builds_and_presents_no_credential_at_all
+    [nil, ''].each do |api_key|
+      calls = stub_api('/api/v2/database/list', 200, { 'databases' => [] })
+
+      InternetData::Client.new(api_key: api_key, retries: 0).database.list
+
+      refute calls.first.options[:headers].key?('Authorization'),
+             "api_key #{api_key.inspect} still sent an Authorization header"
+      refute_includes calls.first.url, 'apikey'
+    end
   end
 end

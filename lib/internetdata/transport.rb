@@ -3,11 +3,15 @@
 require 'uri'
 
 module InternetData
-  # The generated wire client, with the two things it gets wrong for this API
+  # The generated wire client, with the three things it gets wrong for this API
   # corrected in one place.
   class Transport < ApiClient
+    # The generated Configuration applies a security scheme whatever it holds, so
+    # a keyless client would send `Authorization: Bearer ` - an empty credential,
+    # which the API answers 401 to rather than treating as no credential at all.
+    # That is also exactly what an unset `${{ secrets.X }}` interpolates to.
     class Config < Configuration
-      def initialize(api_key:, base_url: DEFAULT_BASE_URL, timeout: DEFAULT_TIMEOUT)
+      def initialize(api_key: nil, base_url: DEFAULT_BASE_URL, timeout: DEFAULT_TIMEOUT)
         super()
         uri = URI.parse(base_url)
         self.scheme = uri.scheme
@@ -15,6 +19,12 @@ module InternetData
         self.base_path = uri.path
         self.access_token = api_key
         self.timeout = timeout
+      end
+
+      def auth_settings
+        return {} if access_token.nil? || access_token.to_s.empty?
+
+        super
       end
     end
 
