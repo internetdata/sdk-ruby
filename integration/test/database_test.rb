@@ -12,7 +12,7 @@ require_relative '../lib/staging'
 class DatabaseTest < Minitest::Test
   FORMATS = %w[csvgz mmdb].freeze
   STANDINGS = %w[licensed expired unlicensed].freeze
-  REDISTRIBUTION = %w[evaluation internal redistribute].freeze
+  LICENSE_TYPE = %w[evaluation internal redistribute].freeze
   DIGESTS = %w[md5 sha1 sha256 sha512].freeze
 
   def setup
@@ -25,8 +25,8 @@ class DatabaseTest < Minitest::Test
     refute_empty databases, 'staging published no databases at all'
     databases.each do |database|
       assert_includes STANDINGS, database.standing, "#{database.base}: standing"
-      unless database.redistribution.nil?
-        assert_includes REDISTRIBUTION, database.redistribution, "#{database.base}: redistribution"
+      unless database.license_type.nil?
+        assert_includes LICENSE_TYPE, database.license_type, "#{database.base}: license_type"
       end
       refute_empty database.versions, "#{database.base}: a family with no versions"
       database.versions.each do |version|
@@ -45,7 +45,7 @@ class DatabaseTest < Minitest::Test
 
     refute_empty licensed, 'the CI credential licenses nothing, so nothing can be downloaded'
     licensed.each do |database|
-      refute_nil database.redistribution, "#{database.base}: a live license with no redistribution term"
+      refute_nil database.license_type, "#{database.base}: a live license with no license_type term"
     end
   end
 

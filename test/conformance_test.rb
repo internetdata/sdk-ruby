@@ -106,16 +106,16 @@ class ConformanceTest < Minitest::Test
                  calls.map { |request| request.options[:headers]['Authorization'] }
   end
 
-  def test_every_documented_standing_and_redistribution_decodes
+  def test_every_documented_standing_and_license_type_decodes
     CORPUS['standings'].each do |standing|
-      CORPUS['redistribution'].each do |redistribution|
-        decoded = InternetData::Database.build_from_hash(family('x', standing, redistribution))
+      CORPUS['license_type'].each do |license_type|
+        decoded = InternetData::Database.build_from_hash(family('x', standing, license_type))
         assert_equal standing, decoded.standing
-        assert_equal redistribution, decoded.redistribution
+        assert_equal license_type, decoded.license_type
       end
     end
     # Null when there is no license, which is most of a published catalog.
-    assert_nil InternetData::Database.build_from_hash(family('x', 'unlicensed', nil)).redistribution
+    assert_nil InternetData::Database.build_from_hash(family('x', 'unlicensed', nil)).license_type
   end
 
   def test_every_documented_format_is_accepted_and_nothing_else_is
@@ -131,10 +131,10 @@ class ConformanceTest < Minitest::Test
 
   private
 
-  def family(base, standing, redistribution = 'internal')
+  def family(base, standing, license_type = 'standard')
     {
       'base' => base, 'name' => base.upcase, 'summary' => 'a line',
-      'standing' => standing, 'redistribution' => redistribution,
+      'standing' => standing, 'license_type' => license_type,
       'starts' => nil, 'expires' => nil,
       'versions' => [{
         'id' => "#{base}_v1", 'version' => 1, 'summary' => 'a line',

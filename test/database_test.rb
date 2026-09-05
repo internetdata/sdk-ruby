@@ -32,7 +32,7 @@ class DatabaseTest < Minitest::Test
                'databases' => [{
                  'base' => 'bogon_ip', 'name' => 'Bogon IP',
                  'summary' => 'Address space that cannot appear on the public internet.',
-                 'standing' => 'licensed', 'redistribution' => 'internal',
+                 'standing' => 'licensed', 'license_type' => 'standard',
                  'starts' => '2026-01-01T00:00:00Z', 'expires' => nil,
                  'versions' => [{
                    'id' => 'bogon_ip_v1', 'version' => 1, 'summary' => 'v1',
@@ -45,7 +45,7 @@ class DatabaseTest < Minitest::Test
     assert_equal 1, databases.length
     assert_equal 'bogon_ip', databases.first.base
     assert_equal 'licensed', databases.first.standing
-    assert_equal 'internal', databases.first.redistribution
+    assert_equal 'standard', databases.first.license_type
     assert_nil databases.first.expires
     assert_equal 'bogon_ip_v1', databases.first.versions.first.id
     assert_equal 1, databases.first.versions.first.version
