@@ -1,4 +1,4 @@
-# [<img src="https://s3.internetdata.io/internetdata-public/brand/mark.svg" alt="InternetData" width="24"/>](https://internetdata.io/) InternetData Ruby Client Library
+# [<img src="https://s3.internetdata.io/internetdata-public/brand/mark.svg" alt="InternetData" height="28"/>](https://internetdata.io/) InternetData Ruby Client Library
 
 [![gem](https://img.shields.io/gem/v/internetdata.svg)](https://rubygems.org/gems/internetdata)
 [![license](https://img.shields.io/github/license/internetdata/sdk-ruby.svg)](LICENSE)
