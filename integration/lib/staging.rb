@@ -5,6 +5,7 @@
 # from pulling a real database through CI.
 
 require 'json'
+require 'uri'
 require 'minitest/autorun'
 require 'typhoeus'
 require 'internetdata'
