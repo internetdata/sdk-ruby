@@ -1,4 +1,4 @@
-# [<img src="https://docs.internetdata.io/logo.svg" alt="InternetData" width="24"/>](https://internetdata.io/) InternetData Ruby Client Library
+# [<img src="https://s3.internetdata.io/internetdata-public/brand/mark.svg" alt="InternetData" width="24"/>](https://internetdata.io/) InternetData Ruby Client Library
 
 [![gem](https://img.shields.io/gem/v/internetdata.svg)](https://rubygems.org/gems/internetdata)
 [![license](https://img.shields.io/github/license/internetdata/sdk-ruby.svg)](LICENSE)
@@ -118,7 +118,7 @@ There are official InternetData client libraries available for many languages in
 
 IP intelligence databases: VPN, proxy, hosting, CDN and relay address space, provider catalogs and network metadata, published as CSV and MMDB.
 
-[<img src="https://docs.internetdata.io/logo.svg" alt="InternetData" width="96"/>](https://internetdata.io/)
+[<img src="https://s3.internetdata.io/internetdata-public/brand/mark.svg" alt="InternetData" width="96"/>](https://internetdata.io/)
 
 ## License
 
