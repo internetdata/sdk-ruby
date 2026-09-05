@@ -21,10 +21,23 @@ module InternetData
         self.timeout = timeout
       end
 
+      # ONLY the bearer scheme, never `super`.
+      #
+      # The generated settings list every scheme the spec declares - including
+      # `?apikey=`, which is there for curl users - and Ruby's client applies
+      # ALL of them, so `super` put the key in the URL as well as the header,
+      # where it lands in every access log between here and the API. The sibling
+      # brand's transport has always narrowed it this way; this one did not, and
+      # its own test caught it.
       def auth_settings
         return {} if access_token.nil? || access_token.to_s.empty?
 
-        super
+        {
+          'BearerAuth' => {
+            type: 'bearer', in: 'header', key: 'Authorization',
+            value: "Bearer #{access_token}"
+          }
+        }
       end
     end
 

@@ -12,7 +12,7 @@ require_relative '../lib/staging'
 class DatabaseTest < Minitest::Test
   FORMATS = %w[csvgz mmdb].freeze
   STANDINGS = %w[licensed expired unlicensed].freeze
-  LICENSE_TYPE = %w[evaluation internal redistribute].freeze
+  LICENSE_TYPE = %w[evaluation standard redistribute].freeze
   DIGESTS = %w[md5 sha1 sha256 sha512].freeze
 
   def setup
