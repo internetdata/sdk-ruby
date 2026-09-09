@@ -179,10 +179,14 @@ module InternetData
 
       if attributes.key?(:'renews_at')
         self.renews_at = attributes[:'renews_at']
+      else
+        self.renews_at = nil
       end
 
       if attributes.key?(:'notice_due_at')
         self.notice_due_at = attributes[:'notice_due_at']
+      else
+        self.notice_due_at = nil
       end
 
       if attributes.key?(:'versions')
