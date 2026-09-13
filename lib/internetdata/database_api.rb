@@ -44,6 +44,7 @@ module InternetData
     # publishes is the API's choice, not ours, and the response nests them one
     # level down under `checksums`.
     def checksums(id, format)
+      check_format!(format)
       call { @api.database_checksum_v2(id, format).checksums }
     end
 
@@ -61,6 +62,7 @@ module InternetData
     # link authorizes the START of a transfer, so one already running is not
     # interrupted when it lapses.
     def download_url(id, format)
+      check_format!(format)
       call { redirect_location(id, format) }
     end
 
@@ -153,6 +155,20 @@ module InternetData
     # The 302 is this operation's SUCCESS case, but the generated client treats
     # every non-2xx as a failure, so it arrives as an ApiError carrying the
     # Location header.
+    # A format the API does not publish is refused HERE rather than sent.
+    #
+    # The generator used to emit this check inline in the wire client; naming
+    # the enum in the spec made it stop, so an unknown format became a network
+    # round trip and a 400. Owning it in this layer keeps the behaviour where a
+    # caller can see it and independent of what the generator feels like
+    # emitting.
+    def check_format!(format)
+      return if DatabaseFormat.all_vars.include?(format)
+
+      raise ArgumentError,
+            "invalid value for \"format\", must be one of #{DatabaseFormat.all_vars}"
+    end
+
     def redirect_location(id, format)
       @api.download_database_v2(id, format)
       raise Error.new(:server_error, 'expected a redirect to object storage')

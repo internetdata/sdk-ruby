@@ -40,6 +40,10 @@ NAMES="${NAMES},databaseChecksumV2_200_response=DatabaseChecksumsResponse"
 SELECT="apis=DatabaseV2"
 SELECT="${SELECT},models=Database:DatabaseVersion:DatabaseMetadata:DatabaseMetadataColumn"
 SELECT="${SELECT}:DbChecksums:Download:Error:DatabaseList:DownloadList:DatabaseChecksumsResponse"
+# The two named enums. A schema reachable from a selected model is NOT pulled in
+# automatically - leave them out and the deserializer const_gets a class that
+# was never written.
+SELECT="${SELECT}:DatabaseFormat:Standing"
 SELECT="${SELECT},supportingFiles,apiTests=false,modelTests=false,apiDocs=false,modelDocs=false"
 
 rm -rf .gen
