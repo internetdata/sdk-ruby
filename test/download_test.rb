@@ -132,6 +132,36 @@ class DownloadTest < Minitest::Test
     assert_equal :network, error.kind
   end
 
+  # Object storage failing before any byte arrives is an outage like any other,
+  # and the retries the client was given apply to it.
+  def test_object_storage_failing_before_the_body_is_retried
+    client = origin_client(retries: 2, blob_failures: 1)
+    path = File.join(@dir, 'bogon_ip_v1.csv.gz')
+
+    written = client.database.download('bogon_ip_v1', 'csvgz', path)
+
+    assert_equal ['/api/v2/database/download', '/blob', '/blob'], @origin.paths
+    assert_equal BLOB.bytesize, written
+    assert_equal BLOB, File.binread(path)
+  end
+
+  # Once bytes have been handed over they cannot be taken back, so a body that
+  # dies part way is not fetched a second time, however many retries remain.
+  def test_a_body_that_dies_part_way_is_not_fetched_again
+    %i[download download_bytes].each do |method|
+      client = origin_client(retries: 3, blob_bytes: 4 * MIB, die_after: MIB)
+      args = method == :download ? [File.join(@dir, 'once.csv.gz')] : []
+
+      error = assert_raises(InternetData::Error) do
+        client.database.public_send(method, 'bogon_ip_v1', 'csvgz', *args)
+      end
+
+      assert_equal ['/api/v2/database/download', '/blob'], @origin.paths, method
+      assert_equal :network, error.kind, method
+      @origin.stop
+    end
+  end
+
   # The half of the .part guard a cleanup step cannot fake: a destination opened
   # directly is truncated before the first byte arrives, so yesterday's good copy
   # is gone whether or not the refresh then succeeds.

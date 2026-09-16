@@ -170,4 +170,43 @@ class DatabaseTest < Minitest::Test
       refute_includes calls.first.url, 'apikey'
     end
   end
+
+  # The bound must cover the BODY: one that stops at the response head lets a body
+  # stalled after its headers run for as long as the server likes.
+  def test_a_body_stalled_after_its_headers_is_bounded
+    assert_body_bounded(stall: 8)
+  end
+
+  # A byte every 20 ms never leaves one read waiting long, so only a bound on the
+  # whole attempt ends it.
+  def test_a_body_trickled_a_byte_at_a_time_is_bounded
+    assert_body_bounded(trickle: 0.02)
+  end
+
+  private
+
+  # The client's bound (1 s) fires on every JSON call, and the elapsed time says
+  # it was that bound rather than the stall ending on its own.
+  def assert_body_bounded(pace)
+    Typhoeus::Config.block_connection = false
+    origin = Origin.new(body: '', json_pace: pace)
+    slow = InternetData::Client.new(base_url: origin.base_url, api_key: API_KEY, retries: 0, timeout: 1)
+    calls = {
+      list: -> { slow.database.list },
+      metadata: -> { slow.database.metadata('bogon_ip_v1') },
+      downloads: -> { slow.database.downloads(limit: 5) },
+    }
+
+    calls.each do |name, call|
+      started = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      error = assert_raises(InternetData::Error, name) { call.call }
+      elapsed = Process.clock_gettime(Process::CLOCK_MONOTONIC) - started
+
+      assert_equal :network, error.kind, "#{name}: #{error.message}"
+      assert error.retryable?, "#{name}: a timeout is a transport failure, and worth retrying"
+      assert_includes 0.9..2.5, elapsed, "#{name} settled after #{elapsed.round(2)}s"
+    end
+  ensure
+    origin&.stop
+  end
 end

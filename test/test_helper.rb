@@ -51,8 +51,11 @@ end
 class Origin
   FILLER = ('x' * (1024 * 1024)).freeze
 
-  def initialize(body:, blob_bytes: nil, blob_status: 200, mint_status: 302, die_after: nil)
+  def initialize(body:, blob_bytes: nil, blob_status: 200, mint_status: 302, die_after: nil, blob_failures: 0,
+                 json_pace: nil)
     @body = body
+    @blob_failures = blob_failures
+    @json_pace = json_pace
     @blob_bytes = blob_bytes
     @blob_status = blob_status
     @mint_status = mint_status
@@ -96,7 +99,13 @@ class Origin
     record = read_request(connection)
     return if record.nil?
 
-    @lock.synchronize { @seen << record }
+    failing = @lock.synchronize do
+      @seen << record
+      record[:path] == '/blob' && @seen.count { |r| r[:path] == '/blob' } <= @blob_failures
+    end
+    return head(connection, 503, 0) if failing
+    return paced(connection) unless @json_pace.nil? || record[:path] == '/blob'
+
     record[:path] == '/blob' ? serve_blob(connection, record) : mint(connection)
   ensure
     begin
@@ -104,6 +113,27 @@ class Origin
     rescue IOError
       nil
     end
+  end
+
+  # A JSON answer whose headers go out at once and whose body does not, so a bound
+  # that stops at the headers never sees the stall. `stall:` sends half the body
+  # and waits; `trickle:` sends a byte per gap, so no single read waits long.
+  def paced(connection)
+    body = "#{JSON.generate({ 'databases' => [] })}#{' ' * 400}"
+    head(connection, 200, body.bytesize, 'Content-Type' => 'application/json')
+    case @json_pace
+    in { stall: seconds }
+      connection.write(body.byteslice(0, body.bytesize / 2))
+      sleep(seconds)
+      connection.write(body.byteslice(body.bytesize / 2, body.bytesize))
+    in { trickle: gap }
+      body.each_char do |char|
+        connection.write(char)
+        sleep(gap)
+      end
+    end
+  rescue Errno::EPIPE, Errno::ECONNRESET
+    nil
   end
 
   # Absolute, as the real 302 to object storage is: a presigned URL is on another
