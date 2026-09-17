@@ -12,7 +12,7 @@ module InternetData
   # Every database published today needs an API key carrying the `db.download`
   # scope, granted by contract one family at a time. The key is still OPTIONAL:
   # a client built without one sends no `Authorization` header at all, which is
-  # what a database served without a licence would need.
+  # what a database served without a license would need.
   class Client
     # The licensed database downloads, and everything about them.
     attr_reader :database
