@@ -5,6 +5,12 @@ module InternetData
   #
   # Not to be confused with {Database}, which is one entry in a {#list}, nor with
   # the generated {DatabaseV2Api} underneath, which speaks the wire.
+  #
+  # Every JSON call here takes `timeout:`, in seconds, bounding each ATTEMPT of
+  # that call alone and overriding the bound the client was built with. The two
+  # transfers take none, and are refused it rather than ignoring it: a database
+  # runs to gigabytes and minutes, so a bound that suits a JSON call would
+  # abandon a healthy download.
   class DatabaseApi
     def initialize(transport, retries:)
       @transport = transport
@@ -25,8 +31,10 @@ module InternetData
     # server decides that per key. So the catalog is not the same for every key,
     # a listing fetched with one key says nothing about another, and there is no
     # other source to reconstruct it from.
-    def list
-      call { @api.list_databases.databases }
+    #
+    # @param timeout [Numeric, nil] seconds this attempt may take, for THIS call only.
+    def list(timeout: nil)
+      call { @api.list_databases(timeout: timeout).databases }
     end
 
     # What is inside one database: schema, sample rows, row count and sizes.
@@ -34,8 +42,10 @@ module InternetData
     # `updated` and `entries` answer whether today's build is worth fetching, and
     # `size` is bytes per format, which is what a transfer should be budgeted
     # against before it starts.
-    def metadata(id)
-      call { @api.database_metadata_v2(id) }
+    #
+    # @param timeout [Numeric, nil] seconds this attempt may take, for THIS call only.
+    def metadata(id, timeout: nil)
+      call { @api.database_metadata_v2(id, timeout: timeout) }
     end
 
     # The digests for one published file.
@@ -43,15 +53,19 @@ module InternetData
     # Returns the whole set rather than one algorithm: which digests a database
     # publishes is the API's choice, not ours, and the response nests them one
     # level down under `checksums`.
-    def checksums(id, format)
+    #
+    # @param timeout [Numeric, nil] seconds this attempt may take, for THIS call only.
+    def checksums(id, format, timeout: nil)
       check_format!(format)
-      call { @api.database_checksum_v2(id, format).checksums }
+      call { @api.database_checksum_v2(id, format, timeout: timeout).checksums }
     end
 
     # Your organization's recent download attempts, newest first, refusals
     # included.
-    def downloads(limit: nil)
-      call { @api.list_downloads(limit.nil? ? {} : { limit: limit }).downloads }
+    #
+    # @param timeout [Numeric, nil] seconds this attempt may take, for THIS call only.
+    def downloads(limit: nil, timeout: nil)
+      call { @api.list_downloads(limit: limit, timeout: timeout).downloads }
     end
 
     # The time-limited URL for one database file.
@@ -61,9 +75,13 @@ module InternetData
     # caller decides how to transfer a file that routinely runs to gigabytes; the
     # link authorizes the START of a transfer, so one already running is not
     # interrupted when it lapses.
-    def download_url(id, format)
+    #
+    # @param timeout [Numeric, nil] seconds this attempt may take, for THIS call
+    #   only. It bounds the request that MINTS the link, which is an ordinary
+    #   JSON call, and says nothing about the transfer you then run with it.
+    def download_url(id, format, timeout: nil)
       check_format!(format)
-      call { redirect_location(id, format) }
+      call { redirect_location(id, format, timeout) }
     end
 
     # Download one database file to `path`, and return the bytes written.
@@ -177,8 +195,8 @@ module InternetData
             "invalid value for \"format\", must be one of #{DatabaseFormat.all_vars}"
     end
 
-    def redirect_location(id, format)
-      @api.download_database_v2(id, format)
+    def redirect_location(id, format, timeout)
+      @api.download_database_v2(id, format, timeout: timeout)
       raise Error.new(:server_error, 'expected a redirect to object storage')
     rescue ApiError => e
       raise unless e.code == 302

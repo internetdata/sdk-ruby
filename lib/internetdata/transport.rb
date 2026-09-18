@@ -50,9 +50,15 @@ module InternetData
     # is true for every value it can be given, so the download's 302 would be
     # chased and a multi-gigabyte database read into memory. Nothing this API
     # serves is meant to be followed.
+    #
+    # `opts[:timeout]` is a per-call override of the configured bound, which the
+    # generated client would otherwise apply to every request it builds. It
+    # reaches here as an ordinary generated `opts` entry, so one seam bounds
+    # every call whether the request was built by hand or by the generator.
     def build_request(http_method, path, opts = {})
       request = super
       request.options[:followlocation] = false
+      request.options[:timeout] = opts[:timeout] unless opts[:timeout].nil?
       request
     end
 

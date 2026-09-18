@@ -4,6 +4,8 @@
 # unwrap at the wrong depth returns nothing against a healthy API; each test pins
 # the depth.
 
+require 'tmpdir'
+
 require_relative 'test_helper'
 
 class DatabaseTest < Minitest::Test
@@ -183,30 +185,68 @@ class DatabaseTest < Minitest::Test
     assert_body_bounded(trickle: 0.02)
   end
 
+  # A transfer takes no per-call timeout and REFUSES one rather than accepting it
+  # and quietly ignoring it: a database runs to gigabytes and minutes, so any
+  # bound that suits a JSON call would abandon a healthy download, and a caller
+  # who passed one would be told nothing. The option is simply not in the
+  # signature, so Ruby refuses it for us - this is what stops it being added.
+  def test_a_transfer_refuses_a_per_call_timeout
+    path = File.join(Dir.tmpdir, 'internetdata-timeout-refusal.mmdb')
+    api = client.database
+
+    assert_raises(ArgumentError) { api.download('bogon_ip_v1', 'mmdb', path, timeout: 1) }
+    assert_raises(ArgumentError) { api.download_bytes('bogon_ip_v1', 'mmdb', timeout: 1) }
+
+    refute_path_exists path
+  end
+
+  # The other half of the rule above: every call that is NOT a transfer takes the
+  # option. Without this, the refusal test would pass just as well on a surface
+  # that had never been given a per-call timeout at all.
+  def test_every_json_call_takes_a_per_call_timeout
+    %i[list metadata checksums downloads download_url].each do |name|
+      assert_includes client.database.method(name).parameters, %i[key timeout],
+                      "#{name} must take a per-call timeout"
+    end
+  end
+
   private
 
-  # The client's bound (1 s) fires on every JSON call, and the elapsed time says
-  # it was that bound rather than the stall ending on its own.
+  # Each call's per-call bound (0.3 s) fires first, then the same call with no
+  # override waits for the client's own (1 s), and the elapsed time says which
+  # one fired rather than the stall ending on its own.
   def assert_body_bounded(pace)
     Typhoeus::Config.block_connection = false
     origin = Origin.new(body: '', json_pace: pace)
     slow = InternetData::Client.new(base_url: origin.base_url, api_key: API_KEY, retries: 0, timeout: 1)
-    calls = {
+    per_call = {
+      list: -> { slow.database.list(timeout: 0.3) },
+      metadata: -> { slow.database.metadata('bogon_ip_v1', timeout: 0.3) },
+      checksums: -> { slow.database.checksums('bogon_ip_v1', 'mmdb', timeout: 0.3) },
+      downloads: -> { slow.database.downloads(limit: 5, timeout: 0.3) },
+      # Minting a link is an ordinary JSON call, so it takes the bound; the
+      # transfer that link is for is the one that must not.
+      download_url: -> { slow.database.download_url('bogon_ip_v1', 'mmdb', timeout: 0.3) },
+    }
+    client_bound = {
       list: -> { slow.database.list },
       metadata: -> { slow.database.metadata('bogon_ip_v1') },
       downloads: -> { slow.database.downloads(limit: 5) },
     }
 
-    calls.each do |name, call|
-      started = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-      error = assert_raises(InternetData::Error, name) { call.call }
-      elapsed = Process.clock_gettime(Process::CLOCK_MONOTONIC) - started
-
-      assert_equal :network, error.kind, "#{name}: #{error.message}"
-      assert error.retryable?, "#{name}: a timeout is a transport failure, and worth retrying"
-      assert_includes 0.9..2.5, elapsed, "#{name} settled after #{elapsed.round(2)}s"
-    end
+    per_call.each { |name, call| assert_times_out(name, call, 0.25..0.9) }
+    client_bound.each { |name, call| assert_times_out(name, call, 0.9..2.5) }
   ensure
     origin&.stop
+  end
+
+  def assert_times_out(name, call, window)
+    started = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+    error = assert_raises(InternetData::Error, name) { call.call }
+    elapsed = Process.clock_gettime(Process::CLOCK_MONOTONIC) - started
+
+    assert_equal :network, error.kind, "#{name}: #{error.message}"
+    assert error.retryable?, "#{name}: a timeout is a transport failure, and worth retrying"
+    assert_includes window, elapsed, "#{name} settled after #{elapsed.round(2)}s"
   end
 end

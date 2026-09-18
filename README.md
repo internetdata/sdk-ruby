@@ -92,6 +92,18 @@ client.database.downloads(limit: 20).each do |attempt|
 end
 ```
 
+### Timeouts
+
+```ruby
+client = InternetData::Client.new(api_key: ENV['INTERNETDATA_API_KEY'], timeout: 10)
+
+catalog = client.database.list(timeout: 5)
+```
+
+`timeout` is in seconds and bounds each attempt, body included, so a call that is retried can take longer in total. It defaults to 30 seconds. The client's value is the default: from 2.1.0, `list`, `metadata`, `checksums`, `downloads` and `download_url` each take `timeout:` for that call alone.
+
+`download` and `download_bytes` take no `timeout:` and raise `ArgumentError` if handed one, rather than accepting it and quietly doing nothing: a transfer runs to gigabytes and minutes, so any bound that suits a JSON call would abandon a healthy download. They bound only their connection with the client's value. `download_url` does take one, because minting the link is an ordinary API request - it bounds that request, not whatever you do with the link afterwards.
+
 ### Errors
 
 Failures raise an `InternetData::Error` carrying a `kind` and a `retryable?` flag:
