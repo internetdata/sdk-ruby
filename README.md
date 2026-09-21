@@ -120,6 +120,23 @@ end
 
 Note that `:rate_limited` and `:quota_exceeded` both arrive as HTTP 429 and are not the same thing. A rate limit is the API facing a burst, so retrying later works; a spent quota needs your allowance raised or the window to roll over. The library retries the first for you and never the second.
 
+### Sign in with OAuth (device flow)
+
+A program running on a person's own machine can let them sign in with their browser and pick one of their API keys, instead of asking them to paste one.
+
+```ruby
+client = InternetData::Client.new
+device = client.oauth.device_authorization('your-client-id', scope: 'account.read apikeys.read apikeys.reveal')
+puts "Open #{device.verification_uri} and enter #{device.user_code}"
+
+token = client.oauth.poll_device_token('your-client-id', device)
+raise 'no API key was picked' if token.apikey.nil?
+
+keyed = InternetData::Client.new(api_key: token.apikey)
+```
+
+`poll_device_token` raises `InternetData::OauthAccessDeniedError` when the person refuses and `InternetData::OauthExpiredTokenError` when the code expires first. Client IDs are issued on request from support@internetdata.io, and `client.oauth.revoke('your-client-id', token.refresh_token)` signs the machine out.
+
 ## Other Libraries
 
 There are official InternetData client libraries available for many languages including PHP, Python, Go, Java, Ruby, and many popular frameworks such as Django, Rails, and Laravel. See our GitHub at https://github.com/internetdata for more.

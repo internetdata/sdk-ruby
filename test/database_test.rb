@@ -227,11 +227,13 @@ class DatabaseTest < Minitest::Test
       # Minting a link is an ordinary JSON call, so it takes the bound; the
       # transfer that link is for is the one that must not.
       download_url: -> { slow.database.download_url('bogon_ip_v1', 'mmdb', timeout: 0.3) },
+      oauth_exchange: -> { slow.oauth.exchange_device_code('cli', 'mo_dc_x', timeout: 0.3) },
     }
     client_bound = {
       list: -> { slow.database.list },
       metadata: -> { slow.database.metadata('bogon_ip_v1') },
       downloads: -> { slow.database.downloads(limit: 5) },
+      oauth_metadata: -> { slow.oauth.metadata },
     }
 
     per_call.each { |name, call| assert_times_out(name, call, 0.25..0.9) }

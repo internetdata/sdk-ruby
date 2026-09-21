@@ -14,41 +14,37 @@ require 'date'
 require 'time'
 
 module InternetData
-  class DatabaseChecksumsResponse < ApiModelBase
-    attr_accessor :id
+  class TokenResponse < ApiModelBase
+    attr_accessor :access_token
 
-    attr_accessor :format
+    # Always `Bearer`.
+    attr_accessor :token_type
 
-    attr_accessor :checksums
+    # Seconds until the access token expires.
+    attr_accessor :expires_in
 
-    class EnumAttributeValidator
-      attr_reader :datatype
-      attr_reader :allowable_values
+    # Always returned. A refresh consumes the token it presents, so keep this one.
+    attr_accessor :refresh_token
 
-      def initialize(datatype, allowable_values)
-        @allowable_values = allowable_values.map do |value|
-          case datatype.to_s
-          when /Integer/i
-            value.to_i
-          when /Float/i
-            value.to_f
-          else
-            value
-          end
-        end
-      end
+    # What was actually granted, which may be narrower than what was asked for.
+    attr_accessor :scope
 
-      def valid?(value)
-        !value || allowable_values.include?(value)
-      end
-    end
+    # Not part of OAuth. The ID of the API key the person picked when they approved, returned by every grant while this authorization may still read that key back. Absent when no key was picked, or when the person's role no longer allows reading keys back. 
+    attr_accessor :apikey_id
+
+    # Not part of OAuth. The API key itself, so a device ends up holding an ordinary key. Returned by the device code and authorization code grants only, never by a refresh, and only alongside `mslm:apikey_id`. Absent when that key's secret cannot be read back, which is the case for a key created before keys could be shown again in the console; a rotated key can be. 
+    attr_accessor :apikey
 
     # Attribute mapping from ruby-style variable name to JSON key.
     def self.attribute_map
       {
-        :'id' => :'id',
-        :'format' => :'format',
-        :'checksums' => :'checksums'
+        :'access_token' => :'access_token',
+        :'token_type' => :'token_type',
+        :'expires_in' => :'expires_in',
+        :'refresh_token' => :'refresh_token',
+        :'scope' => :'scope',
+        :'apikey_id' => :'mslm:apikey_id',
+        :'apikey' => :'mslm:apikey'
       }
     end
 
@@ -65,9 +61,13 @@ module InternetData
     # Attribute type mapping.
     def self.openapi_types
       {
-        :'id' => :'String',
-        :'format' => :'DatabaseFormat',
-        :'checksums' => :'DbChecksums'
+        :'access_token' => :'String',
+        :'token_type' => :'String',
+        :'expires_in' => :'Integer',
+        :'refresh_token' => :'String',
+        :'scope' => :'String',
+        :'apikey_id' => :'String',
+        :'apikey' => :'String'
       }
     end
 
@@ -81,34 +81,50 @@ module InternetData
     # @param [Hash] attributes Model attributes in the form of hash
     def initialize(attributes = {})
       if (!attributes.is_a?(Hash))
-        fail ArgumentError, "The input argument (attributes) must be a hash in `InternetData::DatabaseChecksumsResponse` initialize method"
+        fail ArgumentError, "The input argument (attributes) must be a hash in `InternetData::TokenResponse` initialize method"
       end
 
       # check to see if the attribute exists and convert string to symbol for hash key
       acceptable_attribute_map = self.class.acceptable_attribute_map
       attributes = attributes.each_with_object({}) { |(k, v), h|
         if (!acceptable_attribute_map.key?(k.to_sym))
-          fail ArgumentError, "`#{k}` is not a valid attribute in `InternetData::DatabaseChecksumsResponse`. Please check the name to make sure it's valid. List of attributes: " + acceptable_attribute_map.keys.inspect
+          fail ArgumentError, "`#{k}` is not a valid attribute in `InternetData::TokenResponse`. Please check the name to make sure it's valid. List of attributes: " + acceptable_attribute_map.keys.inspect
         end
         h[k.to_sym] = v
       }
 
-      if attributes.key?(:'id')
-        self.id = attributes[:'id']
+      if attributes.key?(:'access_token')
+        self.access_token = attributes[:'access_token']
       else
-        self.id = nil
+        self.access_token = nil
       end
 
-      if attributes.key?(:'format')
-        self.format = attributes[:'format']
+      if attributes.key?(:'token_type')
+        self.token_type = attributes[:'token_type']
       else
-        self.format = nil
+        self.token_type = nil
       end
 
-      if attributes.key?(:'checksums')
-        self.checksums = attributes[:'checksums']
+      if attributes.key?(:'expires_in')
+        self.expires_in = attributes[:'expires_in']
       else
-        self.checksums = nil
+        self.expires_in = nil
+      end
+
+      if attributes.key?(:'refresh_token')
+        self.refresh_token = attributes[:'refresh_token']
+      end
+
+      if attributes.key?(:'scope')
+        self.scope = attributes[:'scope']
+      end
+
+      if attributes.key?(:'apikey_id')
+        self.apikey_id = attributes[:'apikey_id']
+      end
+
+      if attributes.key?(:'apikey')
+        self.apikey = attributes[:'apikey']
       end
     end
 
@@ -117,16 +133,16 @@ module InternetData
     def list_invalid_properties
       warn '[DEPRECATED] the `list_invalid_properties` method is obsolete'
       invalid_properties = Array.new
-      if @id.nil?
-        invalid_properties.push('invalid value for "id", id cannot be nil.')
+      if @access_token.nil?
+        invalid_properties.push('invalid value for "access_token", access_token cannot be nil.')
       end
 
-      if @format.nil?
-        invalid_properties.push('invalid value for "format", format cannot be nil.')
+      if @token_type.nil?
+        invalid_properties.push('invalid value for "token_type", token_type cannot be nil.')
       end
 
-      if @checksums.nil?
-        invalid_properties.push('invalid value for "checksums", checksums cannot be nil.')
+      if @expires_in.nil?
+        invalid_properties.push('invalid value for "expires_in", expires_in cannot be nil.')
       end
 
       invalid_properties
@@ -136,40 +152,40 @@ module InternetData
     # @return true if the model is valid
     def valid?
       warn '[DEPRECATED] the `valid?` method is obsolete'
-      return false if @id.nil?
-      return false if @format.nil?
-      return false if @checksums.nil?
+      return false if @access_token.nil?
+      return false if @token_type.nil?
+      return false if @expires_in.nil?
       true
     end
 
     # Custom attribute writer method with validation
-    # @param [Object] id Value to be assigned
-    def id=(id)
-      if id.nil?
-        fail ArgumentError, 'id cannot be nil'
+    # @param [Object] access_token Value to be assigned
+    def access_token=(access_token)
+      if access_token.nil?
+        fail ArgumentError, 'access_token cannot be nil'
       end
 
-      @id = id
+      @access_token = access_token
     end
 
     # Custom attribute writer method with validation
-    # @param [Object] format Value to be assigned
-    def format=(format)
-      if format.nil?
-        fail ArgumentError, 'format cannot be nil'
+    # @param [Object] token_type Value to be assigned
+    def token_type=(token_type)
+      if token_type.nil?
+        fail ArgumentError, 'token_type cannot be nil'
       end
 
-      @format = format
+      @token_type = token_type
     end
 
     # Custom attribute writer method with validation
-    # @param [Object] checksums Value to be assigned
-    def checksums=(checksums)
-      if checksums.nil?
-        fail ArgumentError, 'checksums cannot be nil'
+    # @param [Object] expires_in Value to be assigned
+    def expires_in=(expires_in)
+      if expires_in.nil?
+        fail ArgumentError, 'expires_in cannot be nil'
       end
 
-      @checksums = checksums
+      @expires_in = expires_in
     end
 
     # Checks equality by comparing each attribute.
@@ -177,9 +193,13 @@ module InternetData
     def ==(o)
       return true if self.equal?(o)
       self.class == o.class &&
-          id == o.id &&
-          format == o.format &&
-          checksums == o.checksums
+          access_token == o.access_token &&
+          token_type == o.token_type &&
+          expires_in == o.expires_in &&
+          refresh_token == o.refresh_token &&
+          scope == o.scope &&
+          apikey_id == o.apikey_id &&
+          apikey == o.apikey
     end
 
     # @see the `==` method
@@ -191,7 +211,7 @@ module InternetData
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [id, format, checksums].hash
+      [access_token, token_type, expires_in, refresh_token, scope, apikey_id, apikey].hash
     end
 
     # Builds the object from hash

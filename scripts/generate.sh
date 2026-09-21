@@ -44,7 +44,16 @@ SELECT="${SELECT}:DbChecksums:Download:Error:DatabaseList:DownloadList:DatabaseC
 # automatically - leave them out and the deserializer const_gets a class that
 # was never written.
 SELECT="${SELECT}:DatabaseFormat:Standing"
+# The three answers client.oauth returns. The Authorization API and the IAM tags
+# are NOT selected: every generated class is public here, and VPNDetection's
+# AuthorizationWireApi is public by accident and deprecated for exactly that, so
+# this gem never ships one. client.oauth builds its own requests.
+SELECT="${SELECT}:OauthMetadata:DeviceAuthorization:TokenResponse"
 SELECT="${SELECT},supportingFiles,apiTests=false,modelTests=false,apiDocs=false,modelDocs=false"
+
+# The two `mslm:` members of TokenResponse would otherwise surface as
+# `mslm_apikey_id` and `mslm_apikey`.
+PROPERTIES="mslm:apikey_id=apikey_id,mslm:apikey=apikey"
 
 rm -rf .gen
 mkdir -p .gen
@@ -58,6 +67,7 @@ docker run --rm \
     -o /out \
     --model-name-mappings "$MODELS" \
     --inline-schema-name-mappings "$NAMES" \
+    --name-mappings "$PROPERTIES" \
     --global-property "$SELECT" \
     --additional-properties="$PROPS" \
     >/dev/null

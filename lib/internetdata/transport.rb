@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require 'json'
 require 'uri'
 
 module InternetData
@@ -87,5 +88,67 @@ module InternetData
       options[:cainfo] = @config.ssl_ca_cert if @config.ssl_ca_cert
       Typhoeus::Request.new(url, options)
     end
+
+    # A request to the authorization server, which carries NO credential whatever
+    # this client was built with: these endpoints have no use for the API key, and
+    # on the token endpoint an `Authorization` header reads as client
+    # authentication, which a public client does not have.
+    #
+    # The form is encoded here rather than by curl, so a `+` in a value leaves as
+    # `%2B` and never arrives as a space.
+    def oauth_request(http_method, path, form: nil, timeout: nil)
+      headers = { 'Accept' => 'application/json' }
+      headers['Content-Type'] = 'application/x-www-form-urlencoded' unless form.nil?
+      request = build_request(http_method, path, header_params: headers, auth_names: [], timeout: timeout)
+      request.options[:body] = URI.encode_www_form(form) unless form.nil?
+      request
+    end
+
+    # The JSON object a 2xx OAuth answer carries. A refusal the authorization
+    # server words as an RFC 6749 error raises that; anything else that is not a
+    # 2xx raises the ordinary error its status maps to.
+    def self.oauth_object(response)
+      oauth_success!(response)
+      parse_object(response)
+    end
+
+    def self.oauth_success!(response)
+      raise Error.from_transport(response) if transport_failure?(response)
+      return if response.success?
+
+      raise oauth_refusal(response) || Error.from_status(response.code, response.headers, response.body)
+    end
+
+    # Only a 4xx whose body is a JSON object with a STRING `error` is the
+    # authorization server's own refusal. A 5xx is an outage whatever its body
+    # says, and a gateway's page names no OAuth code at all.
+    def self.oauth_refusal(response)
+      return nil unless (400..499).cover?(response.code)
+
+      body = JSON.parse(response.body.to_s)
+      return nil unless body.is_a?(Hash) && body['error'].is_a?(String)
+
+      description = body['error_description'].is_a?(String) ? body['error_description'] : nil
+      OauthRequestError.for_code(body['error'], description, status: response.code, headers: response.headers)
+    rescue JSON::ParserError
+      nil
+    end
+
+    def self.transport_failure?(response)
+      response.timed_out? || response.code.to_i.zero?
+    end
+
+    def self.parse_object(response)
+      body = JSON.parse(response.body.to_s)
+      return body if body.is_a?(Hash)
+
+      raise Error.new(:server_error, 'the API answered with something other than an object',
+                      status: response.code)
+    rescue JSON::ParserError => e
+      raise Error.new(:server_error, "could not parse the response body: #{e.message}",
+                      status: response.code)
+    end
+
+    private_class_method :transport_failure?, :parse_object, :oauth_refusal
   end
 end

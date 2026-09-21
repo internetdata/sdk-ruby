@@ -16,6 +16,7 @@ require 'internetdata/errors'
 require 'internetdata/retries'
 require 'internetdata/transport'
 require 'internetdata/database_api'
+require 'internetdata/oauth_api'
 require 'internetdata/client'
 
 # The official Ruby client library for the InternetData API.
