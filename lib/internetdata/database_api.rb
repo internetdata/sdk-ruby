@@ -25,12 +25,8 @@ module InternetData
     # the ids {#download}, {#download_bytes}, {#download_url}, {#checksums} and
     # {#metadata} take come from each family's `versions`, not from the family.
     #
-    # `standing` is the discovery surface for the PUBLISHED catalog only. A
-    # database commissioned for a single customer is ABSENT from this listing for
-    # everyone else, rather than present with a standing of `unlicensed`, and the
-    # server decides that per key. So the catalog is not the same for every key,
-    # a listing fetched with one key says nothing about another, and there is no
-    # other source to reconstruct it from.
+    # This is the server's answer for this key, so a listing held from one key is
+    # not an answer for another.
     #
     # @param timeout [Numeric, nil] seconds this attempt may take, for THIS call only.
     def list(timeout: nil)
