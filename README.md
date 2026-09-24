@@ -100,7 +100,7 @@ client = InternetData::Client.new(api_key: ENV['INTERNETDATA_API_KEY'], timeout:
 catalog = client.database.list(timeout: 5)
 ```
 
-`timeout` is in seconds and bounds each attempt, body included, so a call that is retried can take longer in total. It defaults to 30 seconds. The client's value is the default: from 2.1.0, `list`, `metadata`, `checksums`, `downloads` and `download_url` each take `timeout:` for that call alone.
+`timeout` is in seconds and bounds each attempt, body included, so a call that is retried can take longer in total. It defaults to 30 seconds, and 0 means no bound. The client's value is the default: from 2.1.0, `list`, `metadata`, `checksums`, `downloads` and `download_url` each take `timeout:` for that call alone. A negative value, anything that isn't a number, and anything past 2147483.647 seconds (the longest curl holds) raise `ArgumentError` where you pass them, before any request.
 
 `download` and `download_bytes` take no `timeout:` and raise `ArgumentError` if handed one, rather than accepting it and quietly doing nothing: a transfer runs to gigabytes and minutes, so any bound that suits a JSON call would abandon a healthy download. They bound only their connection with the client's value. `download_url` does take one, because minting the link is an ordinary API request - it bounds that request, not whatever you do with the link afterwards.
 
@@ -118,7 +118,7 @@ end
 
 `kind` is one of `:bad_request`, `:unauthorized`, `:forbidden`, `:rate_limited`, `:quota_exceeded`, `:server_error` or `:network`. `rc` is the API's own result code, such as `NOT_LICENSED` or `LICENSE_EXPIRED`, which is usually the specific thing you want to read.
 
-Note that `:rate_limited` and `:quota_exceeded` both arrive as HTTP 429 and are not the same thing. A rate limit is the API facing a burst, so retrying later works; a spent quota needs your allowance raised or the window to roll over. The library retries the first for you and never the second.
+Note that `:rate_limited` and `:quota_exceeded` both arrive as HTTP 429 and are not the same thing. A rate limit is the API facing a burst, so retrying later works; a spent quota needs your allowance raised or the window to roll over. The library retries the first for you and never the second. It waits the `Retry-After` the API sent, or its own backoff from 250 ms when that's past about 24.8 days.
 
 ### Sign in with OAuth (device flow)
 

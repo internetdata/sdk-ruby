@@ -7,6 +7,23 @@ module InternetData
   # The generated wire client, with the three things it gets wrong for this API
   # corrected in one place.
   class Transport < ApiClient
+    # The longest `timeout` curl holds, in seconds: 2**31 - 1 ms, about 24.8 days.
+    # libcurl refuses a longer one, and any negative, and Ethon ignores the
+    # refusal, so the call would run with no bound at all.
+    LONGEST_TIMEOUT = 2_147_483.647
+
+    # `timeout`, once it is a bound curl can hold: seconds, 0 for none. Refused
+    # where it is set, because nothing downstream refuses it: a negative ran with
+    # no bound, and NaN, Infinity, a number past curl's ceiling or a string failed
+    # every call with an error from Ruby, FFI or Ethon that names none of this.
+    # NaN fails both comparisons, and an infinity one of them.
+    def self.checked_timeout(timeout)
+      return timeout if timeout.is_a?(Numeric) && timeout.real? && timeout >= 0 && timeout <= LONGEST_TIMEOUT
+
+      raise ArgumentError,
+            "timeout must be a number of seconds from 0 (no bound) to #{LONGEST_TIMEOUT}, not #{timeout.inspect}"
+    end
+
     # The generated Configuration applies a security scheme whatever it holds, so
     # a keyless client would send `Authorization: Bearer ` - an empty credential,
     # which the API answers 401 to rather than treating as no credential at all.
@@ -19,7 +36,7 @@ module InternetData
         self.host = uri.port == uri.default_port ? uri.host : "#{uri.host}:#{uri.port}"
         self.base_path = uri.path
         self.access_token = api_key
-        self.timeout = timeout
+        self.timeout = timeout.nil? ? nil : Transport.checked_timeout(timeout)
       end
 
       # ONLY the bearer scheme, never `super`.
@@ -59,7 +76,7 @@ module InternetData
     def build_request(http_method, path, opts = {})
       request = super
       request.options[:followlocation] = false
-      request.options[:timeout] = opts[:timeout] unless opts[:timeout].nil?
+      request.options[:timeout] = Transport.checked_timeout(opts[:timeout]) unless opts[:timeout].nil?
       request
     end
 
