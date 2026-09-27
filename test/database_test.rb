@@ -90,7 +90,7 @@ class DatabaseTest < Minitest::Test
     calls = stub_api('/api/v2/database/downloads', 200, {
                        'downloads' => [{
                          'dataset_id' => 'bogon_ip_v1', 'format' => 'csvgz',
-                         'outcome' => 'ok', 'bytes' => 760, 'http_status' => 302,
+                         'outcome' => 'ok', 'sample' => true, 'bytes' => 760, 'http_status' => 302,
                          'apikey_id' => 'mk_1234abcd', 'client_ip' => '203.0.113.7',
                          'user_agent' => 'internetdata-ruby/1.0.0',
                          'created' => '2026-09-04T10:00:00Z',
@@ -100,6 +100,7 @@ class DatabaseTest < Minitest::Test
 
     assert_equal 'ok', downloads.first.outcome
     assert_equal 760, downloads.first.bytes
+    assert_equal true, downloads.first.sample
     assert_includes calls.first.url, 'limit=5'
   end
 
