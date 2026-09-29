@@ -2,6 +2,12 @@
 
 What each release changed for you, newest first. Each line is a commit's summary, linked to its full description and diff. Releases before 2.3.2 are described by their release commits.
 
+## 2.4.1 - 2026-09-29
+
+### Fixes
+
+- README: link the evaluation request, not a mailbox ([`ef861c6`](https://github.com/internetdata/sdk-ruby/commit/ef861c69ea5f69ce07ec893fa2694c96e007a21b))
+
 ## 2.4.0 - 2026-09-27
 
 ### Features
