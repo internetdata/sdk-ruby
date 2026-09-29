@@ -2,6 +2,12 @@
 
 What each release changed for you, newest first. Each line is a commit's summary, linked to its full description and diff. Releases before 2.3.2 are described by their release commits.
 
+## 2.5.0 - 2026-09-29
+
+### Features
+
+- Add the authorization code sign-in, with PKCE ([`4996223`](https://github.com/internetdata/sdk-ruby/commit/4996223556280a0ae0558b3290b6284e8c4f8cb6))
+
 ## 2.4.1 - 2026-09-29
 
 ### Fixes
