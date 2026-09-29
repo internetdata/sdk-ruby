@@ -23,7 +23,7 @@ Requires Ruby 3.3 or newer.
 
 ## Usage
 
-Every database published today needs an API key carrying the `db.download` scope. Access is granted by contract, one family at a time, so there is no self-serve tier: write to [dev@internetdata.io](mailto:dev@internetdata.io) to be licensed and issued a key. `api_key:` is nevertheless optional - a client built without one sends no `Authorization` header at all, ready for a database served without a license.
+Every database published today needs an API key carrying the `db.download` scope. Access is granted by contract, one family at a time, so there is no self-serve tier: if your organization doesn't have a license yet, [request an evaluation](https://internetdata.io/contact?purpose=evaluation&subject=Evaluation+license). `api_key:` is nevertheless optional - a client built without one sends no `Authorization` header at all, ready for a database served without a license.
 
 ```ruby
 require 'internetdata'
