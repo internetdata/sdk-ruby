@@ -137,9 +137,10 @@ class DatabaseTest < Minitest::Test
 
     version = unlicensed.first.versions.last
     # Retries would only slow a refusal down: it is a client error either way,
-    # and this asserts the library agrees.
+    # and this asserts the library agrees. A download, because metadata answers
+    # every family the catalog lists, licensed or not.
     error = assert_raises(InternetData::Error) do
-      client(retries: 3).database.metadata(version.id)
+      client(retries: 3).database.download_url(version.id, version.formats.first)
     end
 
     assert_equal :forbidden, error.kind, "#{version.id}: kind"
