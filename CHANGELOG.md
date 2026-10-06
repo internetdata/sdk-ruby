@@ -2,6 +2,12 @@
 
 What each release changed for you, newest first. Each line is a commit's summary, linked to its full description and diff. Releases before 2.3.2 are described by their release commits.
 
+## 2.5.2 - 2026-10-06
+
+### Fixes
+
+- Raise a 2xx that is not its answer as a retried server_error ([`0871929`](https://github.com/internetdata/sdk-ruby/commit/0871929b57df141e7bfbe06940490f18ff547868))
+
 ## 2.5.1 - 2026-10-04
 
 ### Fixes
