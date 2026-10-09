@@ -2,6 +2,17 @@
 
 What each release changed for you, newest first. Each line is a commit's summary, linked to its full description and diff. Releases before 2.3.2 are described by their release commits.
 
+## 2.6.0 - 2026-10-09
+
+### Features
+
+- Re-pin the spec to 2026.10.08, adding the Open databases' open flag ([`8a18e22`](https://github.com/internetdata/sdk-ruby/commit/8a18e22fe260fef355bb2ba8d8b52459eabc5d4e))
+
+### Fixes
+
+- Read a Retry-After as digits or an HTTP date, and nothing else ([`8b422ce`](https://github.com/internetdata/sdk-ruby/commit/8b422ced997413c0945f53966c7b6d7d5376733a))
+- Carry the status when the download link answers 2xx, not its redirect ([`390b33c`](https://github.com/internetdata/sdk-ruby/commit/390b33cf9d8398dd740622aa4ee6995c1194e9e2))
+
 ## 2.5.2 - 2026-10-06
 
 ### Fixes
