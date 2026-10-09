@@ -134,7 +134,7 @@ class ConformanceTest < Minitest::Test
   def family(base, standing, license_type = 'standard')
     {
       'base' => base, 'name' => base.upcase, 'summary' => 'a line',
-      'standing' => standing, 'license_type' => license_type,
+      'standing' => standing, 'open' => false, 'license_type' => license_type,
       'starts' => nil, 'expires' => nil,
       'versions' => [{
         'id' => "#{base}_v1", 'version' => 1, 'summary' => 'a line',

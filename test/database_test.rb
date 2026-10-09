@@ -34,17 +34,24 @@ class DatabaseTest < Minitest::Test
                'databases' => [{
                  'base' => 'bogon_ip', 'name' => 'Bogon IP',
                  'summary' => 'Address space that cannot appear on the public internet.',
-                 'standing' => 'licensed', 'license_type' => 'standard',
+                 'standing' => 'licensed', 'open' => false, 'license_type' => 'standard',
                  'starts' => '2026-01-01T00:00:00Z', 'expires' => nil,
                  'versions' => [{
                    'id' => 'bogon_ip_v1', 'version' => 1, 'summary' => 'v1',
                    'formats' => %w[csvgz mmdb],
                  }],
+               }, {
+                 'base' => 'asn', 'name' => 'ASN', 'summary' => 'Every ASN.',
+                 'standing' => 'unlicensed', 'open' => true, 'license_type' => nil,
+                 'starts' => nil, 'expires' => nil,
+                 'versions' => [{ 'id' => 'asn_v1', 'version' => 1, 'summary' => 'v1', 'formats' => %w[csvgz] }],
                }],
              })
     databases = client.database.list
 
-    assert_equal 1, databases.length
+    # An Open family downloads whatever its standing, which stays as served.
+    assert_equal [[false, 'licensed'], [true, 'unlicensed']], databases.map { |d| [d.open, d.standing] }
+    assert_equal 2, databases.length
     assert_equal 'bogon_ip', databases.first.base
     assert_equal 'licensed', databases.first.standing
     assert_equal 'standard', databases.first.license_type
@@ -90,7 +97,8 @@ class DatabaseTest < Minitest::Test
     calls = stub_api('/api/v2/database/downloads', 200, {
                        'downloads' => [{
                          'dataset_id' => 'bogon_ip_v1', 'format' => 'csvgz',
-                         'outcome' => 'ok', 'sample' => true, 'bytes' => 760, 'http_status' => 302,
+                         'outcome' => 'ok', 'sample' => true, 'open' => true, 'bytes' => 760,
+                         'http_status' => 302,
                          'apikey_id' => 'mk_1234abcd', 'client_ip' => '203.0.113.7',
                          'user_agent' => 'internetdata-ruby/1.0.0',
                          'created' => '2026-09-04T10:00:00Z',
@@ -101,6 +109,7 @@ class DatabaseTest < Minitest::Test
     assert_equal 'ok', downloads.first.outcome
     assert_equal 760, downloads.first.bytes
     assert_equal true, downloads.first.sample
+    assert_equal true, downloads.first.open
     assert_includes calls.first.url, 'limit=5'
   end
 
