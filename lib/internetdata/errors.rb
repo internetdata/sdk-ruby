@@ -93,11 +93,12 @@ module InternetData
       parsed['rc'].is_a?(String) && !parsed['rc'].empty? ? parsed['rc'] : nil
     end
 
+    # Seconds as digits, or an HTTP date, and nothing else: `Float()` would also
+    # read `0x10`, `1_0` and `1e3` as a wait.
     def self.parse_retry_after(value)
-      return nil if value.nil? || value.to_s.strip.empty?
-
-      seconds = Float(value, exception: false)
-      return seconds if seconds && seconds >= 0
+      value = value.to_s.strip
+      return nil if value.empty?
+      return Integer(value, 10) if value.match?(/\A\d+\z/)
 
       # The header also permits an HTTP date.
       when_at = Time.httpdate(value) rescue nil

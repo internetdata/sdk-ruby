@@ -249,10 +249,32 @@ class DatabaseTest < Minitest::Test
     assert_equal 0.25, InternetData::Retries.delay_for(throttle.call(2_147_483.648), 1), 'and past it, the backoff'
   end
 
+  # Seconds as digits, or an HTTP date in any of its three forms, and nothing
+  # else: through 2.5.2 `Float()` read `0x10` as 16 s, `1_0` as 10 s and `1e3`
+  # as 1000 s.
+  def test_a_retry_after_is_digits_or_an_http_date
+    at = Time.now.utc + 1
+    {
+      '0x10' => :quota_exceeded, '1_0' => :quota_exceeded, '1e3' => :quota_exceeded, '1e400' => :quota_exceeded,
+      '1.5' => :quota_exceeded, '+1' => :quota_exceeded, '-1' => :quota_exceeded, 'tomorrow' => :quota_exceeded,
+      '0' => :rate_limited, '120' => :rate_limited, at.httpdate => :rate_limited,
+      at.strftime('%A, %d-%b-%y %H:%M:%S GMT') => :rate_limited,
+      at.strftime('%a %b %e %H:%M:%S %Y') => :rate_limited,
+    }.each do |value, kind|
+      stub_api('/api/v2/database/list', 429, { 'rc' => 'RATE_LIMITED' }, { 'Retry-After' => value })
+      error = assert_raises(InternetData::Error, value) { client.database.list }
+
+      assert_equal kind, error.kind, "Retry-After #{value.inspect}"
+    ensure
+      Typhoeus::Expectation.clear
+    end
+  end
+
   # Honored, 2147484 held the call for 24.8 days, and 9223372036854775807 and
-  # 1e400 raised a raw RangeError out of `sleep` (measured on 2.3.1).
+  # 1e400 raised a raw RangeError out of `sleep` (measured on 2.3.1). 1e400 is
+  # not seconds from 2.6.0, so 401 digits stand in for it.
   def test_a_retry_after_past_the_bound_is_waited_out_on_the_backoff
-    %w[2147484 9223372036854775807 1e400].each do |value|
+    ['2147484', '9223372036854775807', '1' + ('0' * 400)].each do |value|
       Typhoeus.stub("#{BASE_URL}/api/v2/database/list").and_return(
         [json_response(429, { 'rc' => 'RATE_LIMITED' }, 'Retry-After' => value),
          json_response(200, { 'databases' => [] })],
