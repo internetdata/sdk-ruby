@@ -2,6 +2,13 @@
 
 What each release changed for you, newest first. Each line is a commit's summary, linked to its full description and diff. Releases before 2.3.2 are described by their release commits.
 
+## 2.6.1 - 2026-10-10
+
+### Fixes
+
+- Re-pin the spec to 2026.10.09: rotating a key needs apikeys.reveal ([`ed6b0df`](https://github.com/internetdata/sdk-ruby/commit/ed6b0df0c387921ecf2f8bd0d9f278c369aa5c2f))
+- Send no Authorization header for a key of blanks alone ([`05b6fcd`](https://github.com/internetdata/sdk-ruby/commit/05b6fcdca0e8fdbb872746279dc257893c90cbc8))
+
 ## 2.6.0 - 2026-10-09
 
 ### Features
