@@ -47,13 +47,17 @@ module InternetData
       # where it lands in every access log between here and the API. The sibling
       # brand's transport has always narrowed it this way; this one did not, and
       # its own test caught it.
+      #
+      # A key of blanks alone is no key: unstripped, `'   '` or a tab went out
+      # as `Authorization: Bearer` and the blank (2.6.0, measured 2026-10-09).
       def auth_settings
-        return {} if access_token.nil? || access_token.to_s.empty?
+        token = access_token.to_s.strip
+        return {} if token.empty?
 
         {
           'BearerAuth' => {
             type: 'bearer', in: 'header', key: 'Authorization',
-            value: "Bearer #{access_token}"
+            value: "Bearer #{token}"
           }
         }
       end

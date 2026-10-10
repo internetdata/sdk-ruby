@@ -160,6 +160,14 @@ class DatabaseTest < Minitest::Test
     refute_includes calls.first.url, API_KEY
   end
 
+  def test_a_key_is_sent_without_the_blanks_around_it
+    calls = stub_api('/api/v2/database/list', 200, { 'databases' => [] })
+
+    InternetData::Client.new(api_key: " #{API_KEY}\n", retries: 0).database.list
+
+    assert_equal "Bearer #{API_KEY}", calls.first.options[:headers]['Authorization']
+  end
+
   def test_a_missing_scope_is_unauthorized
     stub_api('/api/v2/database/list', 401, { 'rc' => 'UNAUTHORIZED' })
 
@@ -183,7 +191,7 @@ class DatabaseTest < Minitest::Test
   # `auth_settings` gate this sends `Authorization: Bearer ` and `?apikey=` -
   # which is exactly what an unset `${{ secrets.X }}` interpolates to.
   def test_a_keyless_client_builds_and_presents_no_credential_at_all
-    [nil, ''].each do |api_key|
+    [nil, '', '   ', "\t", " \n"].each do |api_key|
       calls = stub_api('/api/v2/database/list', 200, { 'databases' => [] })
 
       InternetData::Client.new(api_key: api_key, retries: 0).database.list
