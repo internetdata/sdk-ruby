@@ -49,7 +49,7 @@ class DatabaseTest < Minitest::Test
              })
     databases = client.database.list
 
-    # An Open family downloads whatever its standing, which stays as served.
+    # An Open family's standing stays as served, never derived from open.
     assert_equal [[false, 'licensed'], [true, 'unlicensed']], databases.map { |d| [d.open, d.standing] }
     assert_equal 2, databases.length
     assert_equal 'bogon_ip', databases.first.base
