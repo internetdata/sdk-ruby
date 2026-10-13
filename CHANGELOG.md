@@ -2,6 +2,12 @@
 
 What each release changed for you, newest first. Each line is a commit's summary, linked to its full description and diff. Releases before 2.3.2 are described by their release commits.
 
+## 2.6.2 - 2026-10-13
+
+### Fixes
+
+- Re-pin the spec to 2026.10.13: Open databases come with a license ([`38225fa`](https://github.com/internetdata/sdk-ruby/commit/38225fa7997ccbba9c76517b416725512f54e9f1))
+
 ## 2.6.1 - 2026-10-10
 
 ### Fixes
