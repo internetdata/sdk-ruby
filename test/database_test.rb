@@ -339,6 +339,67 @@ class DatabaseTest < Minitest::Test
     end
   end
 
+  FAMILY = {
+    'base' => 'bogon_ip', 'name' => 'Bogon IP', 'summary' => 's', 'standing' => 'licensed', 'open' => false,
+    'license_type' => nil, 'starts' => nil, 'expires' => nil,
+    'versions' => [{ 'id' => 'bogon_ip_v1', 'version' => 1, 'summary' => 'v1', 'formats' => %w[csvgz] }],
+  }.freeze
+  METADATA = {
+    'id' => 'bogon_ip_v1', 'updated' => '2026-09-04', 'entries' => 42,
+    'schema' => { 'csvgz' => [{ 'name' => 'ip', 'type' => 'string' }] }, 'size' => { 'csvgz' => 760 },
+  }.freeze
+  DOWNLOAD = {
+    'dataset_id' => 'bogon_ip_v1', 'format' => 'csvgz', 'outcome' => 'ok', 'sample' => true, 'open' => true,
+    'bytes' => 760, 'http_status' => 302, 'created' => '2026-09-04T10:00:00Z',
+  }.freeze
+
+  # The generated reader converts with `to_i` and `to_s`, so through 2.6.3 a
+  # version of "x" came back as 0 and one of "3" as 3, handed back as the answer.
+  def test_a_member_of_the_wrong_type_is_a_retried_server_error
+    version = FAMILY['versions'].first
+    answers = {
+      'a version of "x"' => ['/api/v2/database/list', { 'databases' => [FAMILY.merge('versions' => [version.merge('version' => 'x')])] }],
+      'a version of "3"' => ['/api/v2/database/list', { 'databases' => [FAMILY.merge('versions' => [version.merge('version' => '3')])] }],
+      'a base of 7' => ['/api/v2/database/list', { 'databases' => [FAMILY.merge('base' => 7)] }],
+      'open as "false"' => ['/api/v2/database/list', { 'databases' => [FAMILY.merge('open' => 'false')] }],
+      'a format of 1' => ['/api/v2/database/list', { 'databases' => [FAMILY.merge('versions' => [version.merge('formats' => [1])])] }],
+      'entries of "42"' => ['/api/v2/database/metadata', METADATA.merge('entries' => '42')],
+      'a size of "760"' => ['/api/v2/database/metadata', METADATA.merge('size' => { 'csvgz' => '760' })],
+      'an md5 of 7' => ['/api/v2/database/checksum', { 'checksums' => CHECKSUMS.merge('md5' => 7) }],
+      'bytes of "760"' => ['/api/v2/database/downloads', { 'downloads' => [DOWNLOAD.merge('bytes' => '760')] }],
+    }
+    calls = {
+      '/api/v2/database/list' => ->(c) { c.database.list },
+      '/api/v2/database/metadata' => ->(c) { c.database.metadata('bogon_ip_v1') },
+      '/api/v2/database/checksum' => ->(c) { c.database.checksums('bogon_ip_v1', 'csvgz') },
+      '/api/v2/database/downloads' => ->(c) { c.database.downloads },
+    }
+    answers.each do |name, (path, body)|
+      sent = stub_api(path, 200, body)
+      error = assert_raises(InternetData::Error, name) { calls.fetch(path).call(client(retries: 1)) }
+
+      assert_equal :server_error, error.kind, "#{name}: #{error.message}"
+      assert_equal 200, error.status, name
+      assert_equal 2, sent.length, "#{name}: retried"
+    ensure
+      Typhoeus::Expectation.clear
+    end
+  end
+
+  def test_every_member_of_the_right_type_reads
+    {
+      '/api/v2/database/list' => [{ 'databases' => [FAMILY] }, ->(c) { c.database.list.first.versions.first.version }, 1],
+      '/api/v2/database/metadata' => [METADATA, ->(c) { c.database.metadata('bogon_ip_v1').entries }, 42],
+      '/api/v2/database/downloads' => [{ 'downloads' => [DOWNLOAD] }, ->(c) { c.database.downloads.first.bytes }, 760],
+    }.each do |path, (body, read, expected)|
+      stub_api(path, 200, body)
+
+      assert_equal expected, read.call(client), path
+    ensure
+      Typhoeus::Expectation.clear
+    end
+  end
+
   def test_a_2xx_that_is_not_its_answer_is_retried
     calls = stub_api('/api/v2/database/list', 200, '<html>gateway</html>', 'Content-Type' => 'text/html')
 

@@ -90,11 +90,17 @@ module InternetData
     # the spec requires. The generated reader raised a RuntimeError, a
     # JSON::ParserError or an ArgumentError for those, none of them retried, and
     # handed an empty or non-object body back as nil, as if it were the answer.
+    #
+    # Every member present is checked against the type the spec gives it before
+    # the answer is handed back: the generated reader converts with `to_i` and
+    # `to_s`, so `"version":"x"` came back as version 0 and `"version":"3"` as 3,
+    # as if either were the answer (2.6.3, measured 2026-10-16).
     def deserialize(response, return_type)
       data = super
-      return data unless data.nil?
+      raise Error.new(:server_error, "the API answered with no #{return_type}", status: response.code) if data.nil?
 
-      raise Error.new(:server_error, "the API answered with no #{return_type}", status: response.code)
+      check_type!(JSON.parse(response.body, symbolize_names: true), return_type.to_s, 'the answer') if return_type
+      data
     rescue Error
       raise
     rescue StandardError => e
@@ -189,5 +195,42 @@ module InternetData
     end
 
     private_class_method :transport_failure?, :parse_object, :oauth_refusal
+
+    private
+
+    # True when `value` has the generated `type`, a model's members recursively;
+    # raises TypeError naming where it does not. A null is left to the models'
+    # own required-member checks.
+    def check_type!(value, type, where)
+      return true if value.nil?
+
+      typed =
+        case type
+        when 'String', 'Date', 'Time' then value.is_a?(String)
+        when 'Integer' then value.is_a?(Integer)
+        when 'Float' then value.is_a?(Numeric)
+        when 'Boolean' then [true, false].include?(value)
+        when 'Object' then true
+        when /\AArray<(?<inner>.+)>\z/
+          inner = Regexp.last_match(:inner)
+          value.is_a?(Array) && value.each_with_index.all? { |v, i| check_type!(v, inner, "#{where}[#{i}]") }
+        when /\AHash<String, ?(?<inner>.+)>\z/
+          inner = Regexp.last_match(:inner)
+          value.is_a?(Hash) && value.all? { |k, v| check_type!(v, inner, "#{where}.#{k}") }
+        else
+          model = InternetData.const_get(type)
+          if model.respond_to?(:openapi_types)
+            value.is_a?(Hash) && model.openapi_types.all? do |attr, member|
+              key = model.attribute_map[attr]
+              check_type!(value[key], member.to_s, "#{where}.#{key}")
+            end
+          else
+            value.is_a?(String) # an enum
+          end
+        end
+      return true if typed
+
+      raise TypeError, "#{where} is not a #{type}"
+    end
   end
 end
