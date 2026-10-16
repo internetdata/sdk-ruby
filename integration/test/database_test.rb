@@ -66,16 +66,19 @@ class DatabaseTest < Minitest::Test
   end
 
   def test_a_download_matches_the_size_and_the_digest_the_api_published
+    moved = 0
     Dir.mktmpdir('internetdata-integration-') do |dir|
       each_licensed_version do |version|
         metadata = client.database.metadata(version.id)
         version.formats.each do |format|
           size = metadata.size[format]
           # Budgeted BEFORE the transfer, not after: the point is that a
-          # mistaken id never gets to move gigabytes through CI.
-          assert_operator size, :<=, Staging::SIZE_CEILING,
-                          "#{version.id}.#{format} is #{size} bytes, over the CI budget"
+          # mistaken id never gets to move gigabytes through CI. An Open
+          # database is licensed to every organization, so a licensed file
+          # past the budget is passed over rather than failed.
+          next if size > Staging::SIZE_CEILING
 
+          moved += 1
           path = File.join(dir, "#{version.id}.#{format}")
           written = client.database.download(version.id, format, path)
           published = client.database.checksums(version.id, format)
@@ -92,6 +95,7 @@ class DatabaseTest < Minitest::Test
         end
       end
     end
+    assert_operator moved, :>, 0, "nothing licensed publishes a file within the #{Staging::SIZE_CEILING} byte budget"
   end
 
   # The 302 is answered rather than chased, so the link can be handed to anything
