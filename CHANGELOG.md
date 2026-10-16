@@ -2,6 +2,12 @@
 
 What each release changed for you, newest first. Each line is a commit's summary, linked to its full description and diff. Releases before 2.3.2 are described by their release commits.
 
+## 2.6.4 - 2026-10-16
+
+### Fixes
+
+- Retry a database answer whose member has the wrong type ([`890dd72`](https://github.com/internetdata/sdk-ruby/commit/890dd726ec230b6b515d716ab28c62b101eef5a5))
+
 ## 2.6.3 - 2026-10-16
 
 ### Fixes
