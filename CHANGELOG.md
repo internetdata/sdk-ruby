@@ -2,6 +2,12 @@
 
 What each release changed for you, newest first. Each line is a commit's summary, linked to its full description and diff. Releases before 2.3.2 are described by their release commits.
 
+## 2.7.0 - 2026-10-17
+
+### Features
+
+- Re-pin the spec to 2026.10.16: dynamic client registration ([`622cfdd`](https://github.com/internetdata/sdk-ruby/commit/622cfdd00f80cce386bf85122c4dc372cc0d31e2))
+
 ## 2.6.4 - 2026-10-16
 
 ### Fixes
