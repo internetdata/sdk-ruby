@@ -2,6 +2,12 @@
 
 What each release changed for you, newest first. Each line is a commit's summary, linked to its full description and diff. Releases before 2.3.2 are described by their release commits.
 
+## 2.8.1 - 2026-10-18
+
+### Fixes
+
+- Re-pin the spec to 2026.10.18: client_id_issued_at is int64 ([`38a96b2`](https://github.com/internetdata/sdk-ruby/commit/38a96b23684b21485141fb7e4816d33b64f82978))
+
 ## 2.8.0 - 2026-10-18
 
 ### Features
