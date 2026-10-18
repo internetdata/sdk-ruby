@@ -48,7 +48,7 @@ SELECT="${SELECT}:DatabaseFormat:Standing"
 # are NOT selected: every generated class is public here, and VPNDetection's
 # AuthorizationWireApi is public by accident and deprecated for exactly that, so
 # this gem never ships one. client.oauth builds its own requests.
-SELECT="${SELECT}:OauthMetadata:DeviceAuthorization:TokenResponse"
+SELECT="${SELECT}:OauthMetadata:DeviceAuthorization:TokenResponse:ClientRegistration"
 SELECT="${SELECT},supportingFiles,apiTests=false,modelTests=false,apiDocs=false,modelDocs=false"
 
 # The two `mslm:` members of TokenResponse would otherwise surface as
