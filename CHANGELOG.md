@@ -2,6 +2,12 @@
 
 What each release changed for you, newest first. Each line is a commit's summary, linked to its full description and diff. Releases before 2.3.2 are described by their release commits.
 
+## 2.8.0 - 2026-10-18
+
+### Features
+
+- Add oauth.register, for RFC 7591 dynamic client registration ([`0dfa926`](https://github.com/internetdata/sdk-ruby/commit/0dfa926fd5692d7cd7536f6798323680aff3f6e8))
+
 ## 2.7.0 - 2026-10-17
 
 ### Features
