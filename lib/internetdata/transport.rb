@@ -198,13 +198,31 @@ module InternetData
 
     private_class_method :transport_failure?, :parse_object, :oauth_refusal
 
+    # The members the spec requires of each answer a database call reads. One of
+    # them that is not nullable must be there and not null: the generated reader
+    # skips the writer of a list or map member that is not one, so `"versions":
+    # null` came back as a family with no versions (2.8.1, measured 2026-10-19).
+    # test/database_test.rb holds this to spec/openapi.yaml.
+    REQUIRED = {
+      'DatabaseList' => %i[databases],
+      'Database' => %i[base name summary standing open license_type starts expires renews_at notice_due_at versions],
+      'DatabaseVersion' => %i[id version summary formats],
+      'DatabaseMetadata' => %i[id updated entries schema size],
+      'DatabaseMetadataColumn' => %i[name type],
+      'DatabaseChecksumsResponse' => %i[id format checksums],
+      'DbChecksums' => %i[md5 sha1 sha256 sha512],
+      'DownloadList' => %i[downloads],
+      'Download' => %i[dataset_id format outcome sample open bytes http_status apikey_id client_ip user_agent created],
+    }.freeze
+
     private
 
     # True when `value` has the generated `type`, a model's members recursively;
-    # raises TypeError naming where it does not. A null is left to the models'
-    # own required-member checks.
+    # raises TypeError naming where it does not. No list entry or map value the
+    # spec describes may be null, and through 2.8.1 one came back as nil, or as 0
+    # in `size`.
     def check_type!(value, type, where)
-      return true if value.nil?
+      raise TypeError, "#{where} is null" if value.nil?
 
       typed =
         case type
@@ -222,10 +240,7 @@ module InternetData
         else
           model = InternetData.const_get(type)
           if model.respond_to?(:openapi_types)
-            value.is_a?(Hash) && model.openapi_types.all? do |attr, member|
-              key = model.attribute_map[attr]
-              check_type!(value[key], member.to_s, "#{where}.#{key}")
-            end
+            value.is_a?(Hash) && model.openapi_types.all? { |attr, member| check_member!(model, attr, member, value, where) }
           else
             value.is_a?(String) # an enum
           end
@@ -233,6 +248,17 @@ module InternetData
       return true if typed
 
       raise TypeError, "#{where} is not a #{type}"
+    end
+
+    # A member absent or null reads as absent, unless the spec requires it and
+    # does not make it nullable.
+    def check_member!(model, attr, member, value, where)
+      key = model.attribute_map[attr]
+      return check_type!(value[key], member.to_s, "#{where}.#{key}") unless value[key].nil?
+      return true unless REQUIRED.fetch(model.name.split('::').last).include?(attr)
+      return true if model.openapi_nullable.include?(attr)
+
+      raise TypeError, "#{where}.#{key} is #{value.key?(key) ? 'null' : 'missing'}"
     end
   end
 end

@@ -5,6 +5,7 @@
 # the depth.
 
 require 'tmpdir'
+require 'yaml'
 
 require_relative 'test_helper'
 
@@ -289,6 +290,20 @@ class DatabaseTest < Minitest::Test
     end
   end
 
+  # Through 2.8.1 `Time.httpdate` read a day past the month's end as the next
+  # month's, so `31 Nov` was a throttle until 1 December.
+  def test_a_retry_after_date_names_a_real_day
+    ['Tue, 31 Nov 2026 10:00:00 GMT', 'Tuesday, 31-Nov-26 10:00:00 GMT', 'Tue Nov 31 10:00:00 2026',
+     'Mon, 29 Feb 2027 10:00:00 GMT'].each do |value|
+      stub_api('/api/v2/database/list', 429, { 'rc' => 'RATE_LIMITED' }, { 'Retry-After' => value })
+      error = assert_raises(InternetData::Error, value) { client.database.list }
+
+      assert_equal :quota_exceeded, error.kind, "Retry-After #{value.inspect}"
+    ensure
+      Typhoeus::Expectation.clear
+    end
+  end
+
   # Honored, 2147484 held the call for 24.8 days, and 9223372036854775807 and
   # 1e400 raised a raw RangeError out of `sleep` (measured on 2.3.1). 1e400 is
   # not seconds from 2.6.0, so 401 digits stand in for it.
@@ -383,6 +398,68 @@ class DatabaseTest < Minitest::Test
       assert_equal 2, sent.length, "#{name}: retried"
     ensure
       Typhoeus::Expectation.clear
+    end
+  end
+
+  # Through 2.8.1 a null list entry came back as nil, a required list sent as
+  # null as nil, and a size of null as 0, each handed back as the answer.
+  def test_a_null_the_spec_does_not_allow_is_a_retried_server_error
+    version = FAMILY['versions'].first
+    answers = {
+      'a null family' => ['/api/v2/database/list', { 'databases' => [FAMILY, nil] }],
+      'databases of null' => ['/api/v2/database/list', { 'databases' => nil }],
+      'versions of null' => ['/api/v2/database/list', { 'databases' => [FAMILY.merge('versions' => nil)] }],
+      'a null version' => ['/api/v2/database/list', { 'databases' => [FAMILY.merge('versions' => [nil])] }],
+      'formats of null' => ['/api/v2/database/list', { 'databases' => [FAMILY.merge('versions' => [version.merge('formats' => nil)])] }],
+      'a null column' => ['/api/v2/database/metadata', METADATA.merge('schema' => { 'csvgz' => [nil] })],
+      'a null sample row' => ['/api/v2/database/metadata', METADATA.merge('sample' => { 'csvgz' => [nil] })],
+      'a size of null' => ['/api/v2/database/metadata', METADATA.merge('size' => { 'csvgz' => nil })],
+      'downloads of null' => ['/api/v2/database/downloads', { 'downloads' => nil }],
+      'a null download' => ['/api/v2/database/downloads', { 'downloads' => [nil] }],
+    }
+    calls = {
+      '/api/v2/database/list' => ->(c) { c.database.list },
+      '/api/v2/database/metadata' => ->(c) { c.database.metadata('bogon_ip_v1') },
+      '/api/v2/database/downloads' => ->(c) { c.database.downloads },
+    }
+    answers.each do |name, (path, body)|
+      sent = stub_api(path, 200, body)
+      error = assert_raises(InternetData::Error, name) { calls.fetch(path).call(client(retries: 1)) }
+
+      assert_equal :server_error, error.kind, "#{name}: #{error.message}"
+      assert_equal 200, error.status, name
+      assert_equal 2, sent.length, "#{name}: retried"
+    ensure
+      Typhoeus::Expectation.clear
+    end
+  end
+
+  # Transport::REQUIRED is the spec's `required` for every model a database
+  # call reads, and the null check stands on no list entry or map value being
+  # nullable there.
+  def test_the_required_members_are_the_specs
+    spec = YAML.safe_load_file(File.expand_path('../spec/openapi.yaml', __dir__))
+    inline = ->(path) { spec.dig('paths', path, 'get', 'responses', '200', 'content', 'application/json', 'schema') }
+    schemas = spec.dig('components', 'schemas').merge(
+      'DatabaseList' => inline.call('/api/v2/database/list'),
+      'DownloadList' => inline.call('/api/v2/database/downloads'),
+      'DatabaseChecksumsResponse' => inline.call('/api/v2/database/checksum'),
+    )
+    models = InternetData.constants.map { |name| InternetData.const_get(name) }.select do |model|
+      model.is_a?(Class) && model.respond_to?(:openapi_types) && model != InternetData::ErrorEnvelope &&
+        !InternetData::OauthApi::REQUIRED.key?(model)
+    end
+
+    assert_equal models.map { |m| m.name.split('::').last }.sort, InternetData::Transport::REQUIRED.keys.sort
+    InternetData::Transport::REQUIRED.each do |name, members|
+      schema = schemas.fetch(name)
+
+      assert_equal schema.fetch('required').sort, members.map(&:to_s).sort, name
+      schema.fetch('properties').each do |member, property|
+        [property['items'], property['additionalProperties'], property.dig('additionalProperties', 'items')].compact.each do |inner|
+          refute inner['nullable'], "#{name}.#{member}: a nullable entry"
+        end
+      end
     end
   end
 
