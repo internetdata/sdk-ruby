@@ -2,6 +2,13 @@
 
 What each release changed for you, newest first. Each line is a commit's summary, linked to its full description and diff. Releases before 2.3.2 are described by their release commits.
 
+## 2.8.2 - 2026-10-19
+
+### Fixes
+
+- Refuse a null the spec does not allow, at any depth ([`9a85aee`](https://github.com/internetdata/sdk-ruby/commit/9a85aee718922ba5c98b47a79d09e0e3d22f08b8))
+- Read a Retry-After date only when it names a real day ([`fc2cfb5`](https://github.com/internetdata/sdk-ruby/commit/fc2cfb569b3c50a9fd41e1e6bb9c80b2ee919c58))
+
 ## 2.8.1 - 2026-10-18
 
 ### Fixes
