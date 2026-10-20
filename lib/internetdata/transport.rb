@@ -215,6 +215,14 @@ module InternetData
       'Download' => %i[dataset_id format outcome sample open bytes http_status apikey_id client_ip user_agent created],
     }.freeze
 
+    # RFC 3339's full-date, the spec's `date`, and its date-time, the spec's
+    # `date-time`, in the upper case the API sends. Anything else reached the
+    # generated reader's Date.parse or Time.parse, which read "monday" as this
+    # week's, "10:00" as today in the process's zone and 30 February as 2 March
+    # (2.8.2, measured 2026-10-20).
+    RFC3339_DATE = /\A(\d{4})-(\d{2})-(\d{2})\z/
+    RFC3339_DATE_TIME = /\A(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d+)?(?:Z|[+-](\d{2}):(\d{2}))\z/
+
     private
 
     # True when `value` has the generated `type`, a model's members recursively;
@@ -226,7 +234,8 @@ module InternetData
 
       typed =
         case type
-        when 'String', 'Date', 'Time' then value.is_a?(String)
+        when 'String' then value.is_a?(String)
+        when 'Date', 'Time' then value.is_a?(String) && date?(value, type)
         when 'Integer' then value.is_a?(Integer)
         when 'Float' then value.is_a?(Numeric)
         when 'Boolean' then [true, false].include?(value)
@@ -248,6 +257,15 @@ module InternetData
       return true if typed
 
       raise TypeError, "#{where} is not a #{type}"
+    end
+
+    # A date in the form its type names, on a day and at a time that exist: an
+    # hour of 24 rolls over the way a missing day does.
+    def date?(value, type)
+      m = (type == 'Date' ? RFC3339_DATE : RFC3339_DATE_TIME).match(value)
+      return false unless m && Date.valid_date?(m[1].to_i, m[2].to_i, m[3].to_i)
+
+      type == 'Date' || (m[4].to_i < 24 && m[5].to_i < 60 && m[6].to_i < 60 && m[7].to_i < 24 && m[8].to_i < 60)
     end
 
     # A member absent or null reads as absent, unless the spec requires it and

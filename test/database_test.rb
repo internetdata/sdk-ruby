@@ -382,6 +382,15 @@ class DatabaseTest < Minitest::Test
       'a size of "760"' => ['/api/v2/database/metadata', METADATA.merge('size' => { 'csvgz' => '760' })],
       'an md5 of 7' => ['/api/v2/database/checksum', { 'checksums' => CHECKSUMS.merge('md5' => 7) }],
       'bytes of "760"' => ['/api/v2/database/downloads', { 'downloads' => [DOWNLOAD.merge('bytes' => '760')] }],
+      # Through 2.8.2 Date.parse and Time.parse made a date of each of these.
+      'an updated of "monday"' => ['/api/v2/database/metadata', METADATA.merge('updated' => 'monday')],
+      'an updated of "Oct 5"' => ['/api/v2/database/metadata', METADATA.merge('updated' => 'Oct 5')],
+      'an updated with a time' => ['/api/v2/database/metadata', METADATA.merge('updated' => '2026-09-04T10:00:00Z')],
+      'a starts of "10:00"' => ['/api/v2/database/list', { 'databases' => [FAMILY.merge('starts' => '10:00')] }],
+      'a starts on 30 February' => ['/api/v2/database/list', { 'databases' => [FAMILY.merge('starts' => '2026-02-30T00:00:00Z')] }],
+      'a starts at 24:00' => ['/api/v2/database/list', { 'databases' => [FAMILY.merge('starts' => '2026-09-04T24:00:00Z')] }],
+      'a starts with no zone' => ['/api/v2/database/list', { 'databases' => [FAMILY.merge('starts' => '2026-09-04T10:00:00')] }],
+      'a created of "Oct 5"' => ['/api/v2/database/downloads', { 'downloads' => [DOWNLOAD.merge('created' => 'Oct 5')] }],
     }
     calls = {
       '/api/v2/database/list' => ->(c) { c.database.list },
@@ -468,6 +477,21 @@ class DatabaseTest < Minitest::Test
       '/api/v2/database/list' => [{ 'databases' => [FAMILY] }, ->(c) { c.database.list.first.versions.first.version }, 1],
       '/api/v2/database/metadata' => [METADATA, ->(c) { c.database.metadata('bogon_ip_v1').entries }, 42],
       '/api/v2/database/downloads' => [{ 'downloads' => [DOWNLOAD] }, ->(c) { c.database.downloads.first.bytes }, 760],
+    }.each do |path, (body, read, expected)|
+      stub_api(path, 200, body)
+
+      assert_equal expected, read.call(client), path
+    ensure
+      Typhoeus::Expectation.clear
+    end
+  end
+
+  # The forms the API sends: a date-time with milliseconds and Z, an offset, and a full-date.
+  def test_rfc3339_dates_read
+    family = FAMILY.merge('starts' => '2026-09-04T10:00:00.123Z', 'expires' => '2027-09-04T10:00:00+05:30')
+    {
+      '/api/v2/database/list' => [{ 'databases' => [family] }, ->(c) { c.database.list.first.starts.utc.iso8601(3) }, '2026-09-04T10:00:00.123Z'],
+      '/api/v2/database/metadata' => [METADATA.merge('updated' => '2024-02-29'), ->(c) { c.database.metadata('bogon_ip_v1').updated.iso8601 }, '2024-02-29'],
     }.each do |path, (body, read, expected)|
       stub_api(path, 200, body)
 
