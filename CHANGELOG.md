@@ -2,6 +2,12 @@
 
 What each release changed for you, newest first. Each line is a commit's summary, linked to its full description and diff. Releases before 2.3.2 are described by their release commits.
 
+## 2.8.3 - 2026-10-20
+
+### Fixes
+
+- Read a database date only in its RFC 3339 form, on a real day ([`e251fa3`](https://github.com/internetdata/sdk-ruby/commit/e251fa30c67294117271dc9c36a325d3da4a6038))
+
 ## 2.8.2 - 2026-10-19
 
 ### Fixes
