@@ -2,6 +2,12 @@
 
 What each release changed for you, newest first. Each line is a commit's summary, linked to its full description and diff. Releases before 2.3.2 are described by their release commits.
 
+## 2.8.4 - 2026-10-21
+
+### Fixes
+
+- Re-pin the spec to 2026.10.21: a 403 for a refused address ([`0f3ade1`](https://github.com/internetdata/sdk-ruby/commit/0f3ade1e008e58bf65a466e17d2294dced18e013))
+
 ## 2.8.3 - 2026-10-20
 
 ### Fixes
