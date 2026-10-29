@@ -2,6 +2,12 @@
 
 What each release changed for you, newest first. Each line is a commit's summary, linked to its full description and diff. Releases before 2.3.2 are described by their release commits.
 
+## 2.8.5 - 2026-10-29
+
+### Fixes
+
+- Read a lowercase t or z in a date-time ([`d2c7fd5`](https://github.com/internetdata/sdk-ruby/commit/d2c7fd587cc82b6060340d1d879e1ad56cc0445b))
+
 ## 2.8.4 - 2026-10-21
 
 ### Fixes
