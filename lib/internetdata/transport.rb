@@ -216,12 +216,13 @@ module InternetData
     }.freeze
 
     # RFC 3339's full-date, the spec's `date`, and its date-time, the spec's
-    # `date-time`, in the upper case the API sends. Anything else reached the
+    # `date-time`, its `T` and `Z` in either case, as RFC 3339 allows: through
+    # 2.8.4 a lowercase one failed the call. Anything else reached the
     # generated reader's Date.parse or Time.parse, which read "monday" as this
     # week's, "10:00" as today in the process's zone and 30 February as 2 March
     # (2.8.2, measured 2026-10-20).
     RFC3339_DATE = /\A(\d{4})-(\d{2})-(\d{2})\z/
-    RFC3339_DATE_TIME = /\A(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d+)?(?:Z|[+-](\d{2}):(\d{2}))\z/
+    RFC3339_DATE_TIME = /\A(\d{4})-(\d{2})-(\d{2})[Tt](\d{2}):(\d{2}):(\d{2})(?:\.\d+)?(?:[Zz]|[+-](\d{2}):(\d{2}))\z/
 
     private
 

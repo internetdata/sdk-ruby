@@ -486,16 +486,21 @@ class DatabaseTest < Minitest::Test
     end
   end
 
-  # The forms the API sends: a date-time with milliseconds and Z, an offset, and a full-date.
+  # The forms the API sends: a date-time with milliseconds and Z, an offset, and a
+  # full-date. And RFC 3339 allows a lowercase t and z, which 2.8.4 refused.
   def test_rfc3339_dates_read
     family = FAMILY.merge('starts' => '2026-09-04T10:00:00.123Z', 'expires' => '2027-09-04T10:00:00+05:30')
-    {
-      '/api/v2/database/list' => [{ 'databases' => [family] }, ->(c) { c.database.list.first.starts.utc.iso8601(3) }, '2026-09-04T10:00:00.123Z'],
-      '/api/v2/database/metadata' => [METADATA.merge('updated' => '2024-02-29'), ->(c) { c.database.metadata('bogon_ip_v1').updated.iso8601 }, '2024-02-29'],
-    }.each do |path, (body, read, expected)|
+    lower = FAMILY.merge('starts' => '2026-09-04t10:00:00.5z')
+    [
+      ['/api/v2/database/list', { 'databases' => [family] }, ->(c) { c.database.list.first.starts.utc.iso8601(3) }, '2026-09-04T10:00:00.123Z'],
+      ['/api/v2/database/list', { 'databases' => [lower] }, ->(c) { c.database.list.first.starts.utc.iso8601(1) }, '2026-09-04T10:00:00.5Z'],
+      ['/api/v2/database/downloads', { 'downloads' => [DOWNLOAD.merge('created' => '2026-09-04t10:00:00z')] },
+       ->(c) { c.database.downloads.first.created.utc.iso8601 }, '2026-09-04T10:00:00Z'],
+      ['/api/v2/database/metadata', METADATA.merge('updated' => '2024-02-29'), ->(c) { c.database.metadata('bogon_ip_v1').updated.iso8601 }, '2024-02-29'],
+    ].each do |path, body, read, expected|
       stub_api(path, 200, body)
 
-      assert_equal expected, read.call(client), path
+      assert_equal expected, read.call(client), expected
     ensure
       Typhoeus::Expectation.clear
     end
