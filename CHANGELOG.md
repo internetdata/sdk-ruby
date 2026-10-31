@@ -2,6 +2,14 @@
 
 What each release changed for you, newest first. Each line is a commit's summary, linked to its full description and diff. Releases before 2.3.2 are described by their release commits.
 
+## 2.8.6 - 2026-10-31
+
+### Fixes
+
+- Read a database sample row only as an object ([`946ac9b`](https://github.com/internetdata/sdk-ruby/commit/946ac9b9d71c814c059e9964cb102ee96b01d121))
+- Refuse a retries that is not an Integer from 0, where the client is built ([`1d08358`](https://github.com/internetdata/sdk-ruby/commit/1d08358ffb7d2e539fe03d2da98c11b90f69ed25))
+- Refuse a key holding a control character, where the client is built ([`281c1cf`](https://github.com/internetdata/sdk-ruby/commit/281c1cfdf0af9230a0067a9f7052bb8880ca30cc))
+
 ## 2.8.5 - 2026-10-29
 
 ### Fixes
