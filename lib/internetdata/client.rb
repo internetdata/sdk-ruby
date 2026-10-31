@@ -21,14 +21,16 @@ module InternetData
 
     # @param api_key [String, nil] a key carrying the `db.download` scope. Omit
     #   it and no credential is sent; every database published today answers 401.
+    #   The blanks around it are dropped, and blanks alone are no key.
     # @param retries [Integer] extra attempts for a transient failure, from 0. Each
     #   waits the server's `Retry-After` when it sent one of at most about 24.8
     #   days, and otherwise a backoff of 250 ms that doubles per retry.
     # @param timeout [Numeric] seconds allowed for one API call, 0 for no bound. It
     #   also bounds the CONNECT phase of a transfer, which is otherwise unlimited.
     # @raise [ArgumentError] for a `timeout` that is negative, not a finite number,
-    #   or past 2147483.647 seconds (2**31 - 1 ms), the longest curl holds, and
-    #   for a `retries` that is not an Integer from 0.
+    #   or past 2147483.647 seconds (2**31 - 1 ms), the longest curl holds; for a
+    #   `retries` that is not an Integer from 0; and for an `api_key` holding a
+    #   control character, without the key in the message.
     # @param transport [Transport, nil] override the HTTP layer, mostly for tests.
     def initialize(api_key: nil, base_url: DEFAULT_BASE_URL, retries: DEFAULT_RETRIES,
                    timeout: DEFAULT_TIMEOUT, transport: nil)

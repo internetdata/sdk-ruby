@@ -170,6 +170,21 @@ class DatabaseTest < Minitest::Test
     assert_equal "Bearer #{API_KEY}", calls.first.options[:headers]['Authorization']
   end
 
+  # Through 2.8.5 a CR or LF failed every call with Ethon's raw InvalidValue,
+  # whose message quoted the key, and a tab, NUL or DEL went out inside it. A
+  # character past ASCII that is no control goes out as its UTF-8 bytes.
+  def test_a_key_with_a_control_character_is_refused_where_it_is_set
+    calls = stub_api('/api/v2/database/list', 200, { 'databases' => [] })
+    ["#{API_KEY}\r\nX-Injected: 1", "k\ney", "k\0ey", "k\tey", "k\x7Fey", "k\u0085ey"].each do |key|
+      error = assert_raises(ArgumentError, key.inspect) { InternetData::Client.new(api_key: key, retries: 0) }
+      refute_includes error.message, key
+    end
+    assert_empty calls, 'no refused key reached the network'
+
+    InternetData::Client.new(api_key: "kéy中", retries: 0).database.list
+    assert_equal "Bearer kéy中", calls.first.options[:headers]['Authorization']
+  end
+
   def test_a_missing_scope_is_unauthorized
     stub_api('/api/v2/database/list', 401, { 'rc' => 'UNAUTHORIZED' })
 

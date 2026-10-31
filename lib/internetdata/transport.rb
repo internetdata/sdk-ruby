@@ -24,6 +24,19 @@ module InternetData
             "timeout must be a number of seconds from 0 (no bound) to #{LONGEST_TIMEOUT}, not #{timeout.inspect}"
     end
 
+    # `api_key` without the blanks around it, nil for blanks alone. A control
+    # character is refused where it is set, and the key is left out of the
+    # message: a CR or LF failed every call with Ethon's raw InvalidValue, whose
+    # message quoted the key, and a tab, NUL or DEL went out inside it (2.8.5).
+    def self.checked_key(api_key)
+      return nil if api_key.nil?
+
+      key = api_key.to_s.strip
+      raise ArgumentError, 'api_key must not contain a control character' if key.match?(/[[:cntrl:]]/)
+
+      key.empty? ? nil : key
+    end
+
     # The generated Configuration applies a security scheme whatever it holds, so
     # a keyless client would send `Authorization: Bearer ` - an empty credential,
     # which the API answers 401 to rather than treating as no credential at all.
@@ -35,7 +48,7 @@ module InternetData
         self.scheme = uri.scheme
         self.host = uri.port == uri.default_port ? uri.host : "#{uri.host}:#{uri.port}"
         self.base_path = uri.path
-        self.access_token = api_key
+        self.access_token = Transport.checked_key(api_key)
         self.timeout = timeout.nil? ? nil : Transport.checked_timeout(timeout)
       end
 
