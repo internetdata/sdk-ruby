@@ -76,6 +76,7 @@ class DatabaseTest < Minitest::Test
     assert_equal 42, metadata.entries
     assert_equal 'daily', metadata.update_freq
     assert_equal 'ip', metadata.schema['csvgz'].first.name
+    assert_equal({ 'csvgz' => [{ ip: '10.0.0.0/8' }] }, metadata.sample)
     # Per format, and what a transfer is budgeted against before it starts.
     assert_equal({ 'csvgz' => 760, 'mmdb' => 3524 }, metadata.size)
   end
@@ -380,6 +381,11 @@ class DatabaseTest < Minitest::Test
       'a format of 1' => ['/api/v2/database/list', { 'databases' => [FAMILY.merge('versions' => [version.merge('formats' => [1])])] }],
       'entries of "42"' => ['/api/v2/database/metadata', METADATA.merge('entries' => '42')],
       'a size of "760"' => ['/api/v2/database/metadata', METADATA.merge('size' => { 'csvgz' => '760' })],
+      # The spec's sample row is an object, and through 2.8.5 any row came back.
+      'a sample row of 1' => ['/api/v2/database/metadata', METADATA.merge('sample' => { 'csvgz' => [1] })],
+      'a sample row of "x"' => ['/api/v2/database/metadata', METADATA.merge('sample' => { 'csvgz' => ['x'] })],
+      'a sample row of []' => ['/api/v2/database/metadata', METADATA.merge('sample' => { 'csvgz' => [[]] })],
+      'a sample row of true' => ['/api/v2/database/metadata', METADATA.merge('sample' => { 'csvgz' => [true] })],
       'an md5 of 7' => ['/api/v2/database/checksum', { 'checksums' => CHECKSUMS.merge('md5' => 7) }],
       'bytes of "760"' => ['/api/v2/database/downloads', { 'downloads' => [DOWNLOAD.merge('bytes' => '760')] }],
       # Through 2.8.2 Date.parse and Time.parse made a date of each of these.
