@@ -259,6 +259,19 @@ class DatabaseTest < Minitest::Test
     end
   end
 
+  # Through 2.8.5 a failing call read -1 and NaN as no retries, 1.5 as two and
+  # Infinity as retrying for good, and raised a raw ArgumentError for a String,
+  # nil or true.
+  def test_a_retry_count_is_refused_where_it_is_set
+    [-1, Float::NAN, 1.5, 2.0, Float::INFINITY, '2', nil, true].each do |value|
+      assert_raises(ArgumentError, value.inspect) { InternetData::Client.new(api_key: API_KEY, retries: value) }
+    end
+
+    calls = stub_api('/api/v2/database/list', 503, { 'rc' => 'DOWN' })
+    assert_raises(InternetData::Error) { InternetData::Client.new(api_key: API_KEY, retries: 2).database.list }
+    assert_equal 3, calls.length, 'two retries'
+  end
+
   def test_the_retry_schedule_and_the_longest_retry_after_honored
     throttle = ->(seconds) { InternetData::Error.new(:rate_limited, 'x', status: 429, retry_after_seconds: seconds) }
     delays = (1..4).map { |attempt| InternetData::Retries.delay_for(throttle.call(nil), attempt) }
