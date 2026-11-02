@@ -41,7 +41,7 @@ class ConformanceTest < Minitest::Test
   end
 
   # A 404 is a CLIENT error. Three of four VPNDetection SDKs let one fall through
-  # to the retryable server_error default and asked twice more for a database id
+  # to the retryable server_error default and asked twice more for a database ID
   # that will never exist, so the count is pinned rather than the classification
   # alone.
   def test_a_client_error_is_asked_for_exactly_once_and_a_server_error_is_not

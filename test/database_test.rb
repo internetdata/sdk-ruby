@@ -28,8 +28,8 @@ class DatabaseTest < Minitest::Test
     Typhoeus::Expectation.clear
   end
 
-  # A license is held against the FAMILY, and the ids a download takes hang off
-  # `versions`. Reading an id off the family is how list() -> download() breaks.
+  # A license is held against the FAMILY, and the IDs a download takes hang off
+  # `versions`. Reading an ID off the family is how list() -> download() breaks.
   def test_list_unwraps_the_families_and_their_versions
     stub_api('/api/v2/database/list', 200, {
                'databases' => [{

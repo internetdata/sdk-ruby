@@ -23,7 +23,7 @@ module InternetData
     # each one.
     #
     # A license is held against the family while a download names one version, so
-    # the ids {#download}, {#download_bytes}, {#download_url}, {#checksums} and
+    # the IDs {#download}, {#download_bytes}, {#download_url}, {#checksums} and
     # {#metadata} take come from each family's `versions`, not from the family.
     #
     # This is the server's answer for this key, so a listing held from one key is

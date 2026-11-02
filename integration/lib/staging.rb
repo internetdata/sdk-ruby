@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 # The staging fixtures the test files share: the guard that this is the PUBLISHED
-# gem, the request recorder, one client, and the budget that keeps a mistaken id
+# gem, the request recorder, one client, and the budget that keeps a mistaken ID
 # from pulling a real database through CI.
 
 require 'json'
@@ -20,7 +20,7 @@ module Staging
 
   # Every transfer is budgeted against `metadata`'s published size BEFORE it
   # starts. The licensed databases are under 4 KB; published ones reach 5.34 GiB,
-  # so a mistyped id is the difference between a free run and a very slow one.
+  # so a mistyped ID is the difference between a free run and a very slow one.
   SIZE_CEILING = 8 * 1024 * 1024
 
   module_function

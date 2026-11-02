@@ -73,7 +73,7 @@ class DatabaseTest < Minitest::Test
         version.formats.each do |format|
           size = metadata.size[format]
           # Budgeted BEFORE the transfer, not after: the point is that a
-          # mistaken id never gets to move gigabytes through CI. An Open
+          # mistaken ID never gets to move gigabytes through CI. An Open
           # database is licensed to every organization, so a licensed file
           # past the budget is passed over rather than failed.
           next if size > Staging::SIZE_CEILING
