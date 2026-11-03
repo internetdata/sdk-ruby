@@ -35,7 +35,7 @@ client.database.list.each do |database|
 end
 ```
 
-`list` returns one entry per database FAMILY, because a license is held against the family while a download names a specific version. `standing` is `licensed` if the family is yours today, `expired` if the term has ended, and `unlicensed` if it is published but has never been bought. `versions` carries the ids you pass everywhere else, oldest first, and the formats each one is actually built in.
+`list` returns one entry per database FAMILY, because a license is held against the family while a download names a specific version. `standing` is `licensed` if the family is yours today, `expired` if the term has ended, and `unlicensed` if it is published but has never been bought. `versions` carries the IDs you pass everywhere else, oldest first, and the formats each one is actually built in.
 
 ### What is inside a database
 
