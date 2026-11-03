@@ -2,6 +2,13 @@
 
 What each release changed for you, newest first. Each line is a commit's summary, linked to its full description and diff. Releases before 2.3.2 are described by their release commits.
 
+## 2.8.7 - 2026-11-03
+
+### Fixes
+
+- Re-pin the spec to 2026.11.02: ID and IDs in its descriptions ([`5a7c26c`](https://github.com/internetdata/sdk-ruby/commit/5a7c26cae06feef9c276363aeb681aa9ab384f24))
+- Write ID and IDs in prose, never id or ids ([`bfceeb2`](https://github.com/internetdata/sdk-ruby/commit/bfceeb21a69cdc3e8e164f087ef4297ac69ad08b))
+
 ## 2.8.6 - 2026-10-31
 
 ### Fixes
