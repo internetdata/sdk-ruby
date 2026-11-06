@@ -2,6 +2,12 @@
 
 What each release changed for you, newest first. Each line is a commit's summary, linked to its full description and diff. Releases before 2.3.2 are described by their release commits.
 
+## 2.8.8 - 2026-11-06
+
+### Fixes
+
+- Re-pin the spec to 2026.11.05: the download's build parameter ([`9c751d0`](https://github.com/internetdata/sdk-ruby/commit/9c751d0378128fa8702e7235c025f0af47a6f29d))
+
 ## 2.8.7 - 2026-11-03
 
 ### Fixes
