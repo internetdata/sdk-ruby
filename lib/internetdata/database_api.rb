@@ -73,12 +73,18 @@ module InternetData
     # link authorizes the START of a transfer, so one already running is not
     # interrupted when it lapses.
     #
+    # @param build [String, nil] one build of the database, as a
+    #   `database.updated` webhook names it (`20261105.0t53s5`), so the file is
+    #   the one whose `sha256` the webhook carries. nil or empty, the default, is
+    #   the build that is live. A build is kept 7 days; past that the call raises
+    #   `bad_request` with the message `BUILD_GONE`.
     # @param timeout [Numeric, nil] seconds this attempt may take, for THIS call
     #   only. It bounds the request that MINTS the link, which is an ordinary
     #   JSON call, and says nothing about the transfer you then run with it.
-    def download_url(id, format, timeout: nil)
+    def download_url(id, format, build: nil, timeout: nil)
       check_format!(format)
-      call { redirect_location(id, format, timeout) }
+      build = checked_build(build)
+      call { redirect_location(id, format, build, timeout) }
     end
 
     # Download one database file to `path`, and return the bytes written.
@@ -88,10 +94,13 @@ module InternetData
     # whole database, and a refresh that fails does not destroy the copy already
     # there. Nothing beyond one chunk is ever held in memory, whatever the
     # database weighs.
-    def download(id, format, path)
+    #
+    # @param build [String, nil] one build of the database, as `download_url`
+    #   takes it.
+    def download(id, format, path, build: nil)
       partial = "#{path}.part"
       begin
-        url = download_url(id, format)
+        url = download_url(id, format, build: build)
         written = File.open(partial, 'wb') { |file| transfer(url) { |chunk| file.write(chunk) } }
         File.rename(partial, path)
       rescue StandardError
@@ -108,8 +117,11 @@ module InternetData
     # published database is over 5 GiB. Reach for it at the small end, where the
     # bytes go straight into a parser, and use {#download} for anything you have
     # not measured with {#metadata}.
-    def download_bytes(id, format)
-      url = download_url(id, format)
+    #
+    # @param build [String, nil] one build of the database, as `download_url`
+    #   takes it.
+    def download_bytes(id, format, build: nil)
+      url = download_url(id, format, build: build)
       bytes = String.new(encoding: Encoding::BINARY)
       transfer(url) { |chunk| bytes << chunk }
       bytes
@@ -192,8 +204,17 @@ module InternetData
             "invalid value for \"format\", must be one of #{DatabaseFormat.all_vars}"
     end
 
-    def redirect_location(id, format, timeout)
-      _, status, = @api.download_database_v2_with_http_info(id, format, timeout: timeout)
+    # nil for an empty name, so a value read from an unset setting downloads the
+    # live build.
+    def checked_build(build)
+      return nil if build.nil? || build == ''
+      raise ArgumentError, "build must be a String, not #{build.inspect}" unless build.is_a?(String)
+
+      build
+    end
+
+    def redirect_location(id, format, build, timeout)
+      _, status, = @api.download_database_v2_with_http_info(id, format, build: build, timeout: timeout)
       raise Error.new(:server_error, 'expected a redirect to object storage', status: status)
     rescue ApiError => e
       raise unless e.code == 302

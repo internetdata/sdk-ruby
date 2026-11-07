@@ -75,6 +75,14 @@ bytes = client.database.download_bytes('bogon_asn_v1', 'csvgz')
 
 `download_bytes` holds the whole file in memory and the catalog spans seven orders of magnitude, from a few hundred bytes to over 5 GiB, so use `download` for anything you have not checked with `metadata` first.
 
+Each of the three downloads the build that is live unless you name one. A `database.updated` webhook names the build it announces and carries its `sha256`, so a receiver that downloads after the next publish asks for that build to get the file the hash is of:
+
+```ruby
+client.database.download('vpn_ip_v1', 'mmdb', './vpn_ip_v1.mmdb', build: event['data']['build'])
+```
+
+A build is kept 7 days. Past that the call raises `bad_request` with the message `BUILD_GONE`, and downloading without `build:` fetches the live one. A name that is not a build's shape (`20261105.0t53s5`) raises `ArgumentError` before anything is sent.
+
 ### Verifying what you got
 
 ```ruby

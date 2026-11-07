@@ -49,6 +49,43 @@ class DownloadTest < Minitest::Test
     assert_equal Digest::SHA256.hexdigest(File.binread(path)), Digest::SHA256.hexdigest(bytes)
   end
 
+  def test_a_build_goes_on_the_download_request_and_none_without_one
+    downloader = origin_client
+    named = '20261105.0t53s5'
+
+    downloader.database.download_url('bogon_ip_v1', 'csvgz', build: named)
+    downloader.database.download_bytes('bogon_ip_v1', 'csvgz', build: named)
+    downloader.database.download('bogon_ip_v1', 'csvgz', File.join(@dir, 'built.csv.gz'), build: named)
+    downloader.database.download_url('bogon_ip_v1', 'csvgz', build: '')
+    downloader.database.download_bytes('bogon_ip_v1', 'csvgz')
+
+    asked = @origin.instance_variable_get(:@seen).select { |r| r[:path] == '/api/v2/database/download' }
+    queries = asked.map { |r| URI.decode_www_form(URI(r[:target]).query).to_h }
+    with_build = { 'id' => 'bogon_ip_v1', 'format' => 'csvgz', 'build' => named }
+    live = { 'id' => 'bogon_ip_v1', 'format' => 'csvgz' }
+    assert_equal [with_build, with_build, with_build, live, live], queries
+  end
+
+  def test_a_build_that_is_no_string_or_a_transfer_given_a_timeout_is_refused_with_nothing_sent
+    downloader = origin_client
+
+    assert_raises(ArgumentError) { downloader.database.download_url('bogon_ip_v1', 'csvgz', build: 20_261_105) }
+    assert_raises(ArgumentError) { downloader.database.download_bytes('bogon_ip_v1', 'csvgz', build: :x) }
+    assert_raises(ArgumentError) { downloader.database.download_bytes('bogon_ip_v1', 'csvgz', timeout: 5) }
+    assert_empty @origin.paths
+  end
+
+  def test_a_gone_build_is_a_bad_request_asked_once
+    downloader = origin_client(retries: 2, mint_status: 410)
+
+    err = assert_raises(InternetData::Error) do
+      downloader.database.download_url('bogon_ip_v1', 'csvgz', build: '20261029.aaaaaa')
+    end
+    assert_equal :bad_request, err.kind
+    refute_predicate err, :retryable?
+    assert_equal ['/api/v2/database/download'], @origin.paths
+  end
+
   # The key authorizes the API call that mints the link. The link is presigned
   # and authorizes itself, so forwarding the key on would hand a credential to a
   # host that has no business seeing it.
