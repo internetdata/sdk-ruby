@@ -2,6 +2,12 @@
 
 What each release changed for you, newest first. Each line is a commit's summary, linked to its full description and diff. Releases before 2.3.2 are described by their release commits.
 
+## 2.9.0 - 2026-11-07
+
+### Features
+
+- Download a named build: download_url, download and download_bytes take build: ([`cd80ae3`](https://github.com/internetdata/sdk-ruby/commit/cd80ae39599074a07332ce41c1237a895fe8a0d1))
+
 ## 2.8.8 - 2026-11-06
 
 ### Fixes
