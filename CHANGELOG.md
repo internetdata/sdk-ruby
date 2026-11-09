@@ -2,6 +2,12 @@
 
 What each release changed for you, newest first. Each line is a commit's summary, linked to its full description and diff. Releases before 2.3.2 are described by their release commits.
 
+## 2.9.1 - 2026-11-09
+
+### Fixes
+
+- Re-pin the spec to 2026.11.08: the token and revoke descriptions ([`13066cb`](https://github.com/internetdata/sdk-ruby/commit/13066cb21199bc3dc97e77dc1c8616f06d8495f9))
+
 ## 2.9.0 - 2026-11-07
 
 ### Features
