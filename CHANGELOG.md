@@ -2,6 +2,14 @@
 
 What each release changed for you, newest first. Each line is a commit's summary, linked to its full description and diff. Releases before 2.3.2 are described by their release commits.
 
+## 2.10.1 - 2026-11-13
+
+### Fixes
+
+- Re-pin the spec to 2026.11.13 again: a detail object requires no member ([`b56c567`](https://github.com/internetdata/sdk-ruby/commit/b56c567c5cde63716c625604e5c42c64e7d1c057))
+- Refuse a lookup of anything but an IP address before sending it ([`c6045b9`](https://github.com/internetdata/sdk-ruby/commit/c6045b99ae7b3b67f46882f7be44237e009cdab6))
+- Send every request to the client's base URL, whatever the spec's servers ([`2e7db4b`](https://github.com/internetdata/sdk-ruby/commit/2e7db4b2202e6e88142677ad898bd65b5b262b94))
+
 ## 2.10.0 - 2026-11-13
 
 ### Features
