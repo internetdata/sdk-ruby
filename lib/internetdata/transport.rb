@@ -349,23 +349,23 @@ module InternetData
     # there and not null: the generated reader skips the writer of a list or map
     # member that is not one, so `"versions": null` came back as a family with no
     # versions (2.8.1, measured 2026-10-19). A member the spec does not require is
-    # one a plan may leave out. test/database_test.rb holds this to
+    # one a plan may leave out, every member of a detail object among them, which
+    # is `{}` under a false flag. test/database_test.rb holds this to
     # spec/openapi.yaml.
     REQUIRED = {
       'LookupResponse' => %i[ip is_bogon is_tor is_relay is_anycast is_carrier is_satellite is_ssh is_smtp
                              is_web is_dns_resolver is_bittorrent tor relay location asn company hostname abuse],
-      'ClassDetail' => %i[provider provider_name confidence last_seen],
-      'ProxyDetail' => %i[provider provider_name first_seen last_seen hits hits_days_pct providers_num],
-      'PubproxyDetail' => %i[entry exit protocols num_ports num_proxies last_seen last_usable],
-      'CarrierDetail' => %i[name mcc mnc country confidence],
-      'SatelliteDetail' => %i[provider provider_name orbit segment country asn confidence],
-      'SshDetail' => %i[port banner host_key_fp session_ok first_seen last_seen],
-      'SmtpDetail' => %i[port banner session_ok first_seen last_seen],
+      'ClassDetail' => [],
+      'ProxyDetail' => [],
+      'PubproxyDetail' => [],
+      'CarrierDetail' => [],
+      'SatelliteDetail' => [],
+      'SshDetail' => [],
+      'SmtpDetail' => [],
       'WebDetail' => %i[port tls_ok session_ok status_code server location title cert_subject_cn
                         cert_subject_o cert_issuer_dn cert_browser_trusted tls_version first_seen last_seen],
-      'DnsResolverDetail' => %i[port recursion_available rcode answer_correct first_seen last_seen],
-      'BitTorrentDetail' => %i[verified id_matches_ip first_seen last_seen last_reachable days_seen num_ports
-                               peak_num_ports indexer clients],
+      'DnsResolverDetail' => [],
+      'BitTorrentDetail' => [],
       'Location' => %i[continent continent_name country country_name timezone currency_code currency_name
                        currency_symbol flag_emoji flag_unicode],
       'Asn' => %i[asn name domain type prefix],
@@ -384,7 +384,7 @@ module InternetData
       'DnsCnameRecord' => %i[target last_seen],
       'DomainIpRanges' => %i[domain redirects_to total ipv4 ranges],
       'DomainIpRange' => %i[range name country],
-      'DisposableDetail' => %i[confidence providers first_seen last_seen],
+      'DisposableDetail' => [],
       'BatchLookupError' => %i[status error],
       'Entitlement' => %i[org_id apikey plan usage],
       'EntitlementApikey' => %i[id expires allowed_cidrs],
@@ -400,13 +400,6 @@ module InternetData
       'DownloadList' => %i[downloads],
       'Download' => %i[dataset_id format outcome sample open bytes http_status apikey_id client_ip user_agent created],
     }.freeze
-
-    # The detail objects, each `{}` under a false flag (the spec's `allOf`
-    # members), so an empty one is present and empty, while a populated one
-    # carries every member the spec requires of it. test/database_test.rb holds
-    # this to spec/openapi.yaml.
-    DETAILS = %w[ClassDetail ProxyDetail PubproxyDetail CarrierDetail SatelliteDetail SshDetail SmtpDetail
-                 DnsResolverDetail BitTorrentDetail DisposableDetail].freeze
 
     # RFC 3339's full-date, the spec's `date`, and its date-time, the spec's
     # `date-time`, its `T` and `Z` in either case, as RFC 3339 allows: through
@@ -452,8 +445,7 @@ module InternetData
         else
           model = InternetData.const_get(type)
           if model.respond_to?(:openapi_types)
-            value.is_a?(Hash) && ((value.empty? && DETAILS.include?(type)) ||
-              model.openapi_types.all? { |attr, member| check_member!(model, attr, member, value, where) })
+            value.is_a?(Hash) && model.openapi_types.all? { |attr, member| check_member!(model, attr, member, value, where) }
           else
             value.is_a?(String) # an enum
           end

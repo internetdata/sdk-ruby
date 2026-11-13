@@ -91,38 +91,26 @@ module InternetData
 
       if attributes.key?(:'port')
         self.port = attributes[:'port']
-      else
-        self.port = nil
       end
 
       if attributes.key?(:'banner')
         self.banner = attributes[:'banner']
-      else
-        self.banner = nil
       end
 
       if attributes.key?(:'host_key_fp')
         self.host_key_fp = attributes[:'host_key_fp']
-      else
-        self.host_key_fp = nil
       end
 
       if attributes.key?(:'session_ok')
         self.session_ok = attributes[:'session_ok']
-      else
-        self.session_ok = nil
       end
 
       if attributes.key?(:'first_seen')
         self.first_seen = attributes[:'first_seen']
-      else
-        self.first_seen = nil
       end
 
       if attributes.key?(:'last_seen')
         self.last_seen = attributes[:'last_seen']
-      else
-        self.last_seen = nil
       end
     end
 
@@ -131,30 +119,6 @@ module InternetData
     def list_invalid_properties
       warn '[DEPRECATED] the `list_invalid_properties` method is obsolete'
       invalid_properties = Array.new
-      if @port.nil?
-        invalid_properties.push('invalid value for "port", port cannot be nil.')
-      end
-
-      if @banner.nil?
-        invalid_properties.push('invalid value for "banner", banner cannot be nil.')
-      end
-
-      if @host_key_fp.nil?
-        invalid_properties.push('invalid value for "host_key_fp", host_key_fp cannot be nil.')
-      end
-
-      if @session_ok.nil?
-        invalid_properties.push('invalid value for "session_ok", session_ok cannot be nil.')
-      end
-
-      if @first_seen.nil?
-        invalid_properties.push('invalid value for "first_seen", first_seen cannot be nil.')
-      end
-
-      if @last_seen.nil?
-        invalid_properties.push('invalid value for "last_seen", last_seen cannot be nil.')
-      end
-
       invalid_properties
     end
 
@@ -162,73 +126,7 @@ module InternetData
     # @return true if the model is valid
     def valid?
       warn '[DEPRECATED] the `valid?` method is obsolete'
-      return false if @port.nil?
-      return false if @banner.nil?
-      return false if @host_key_fp.nil?
-      return false if @session_ok.nil?
-      return false if @first_seen.nil?
-      return false if @last_seen.nil?
       true
-    end
-
-    # Custom attribute writer method with validation
-    # @param [Object] port Value to be assigned
-    def port=(port)
-      if port.nil?
-        fail ArgumentError, 'port cannot be nil'
-      end
-
-      @port = port
-    end
-
-    # Custom attribute writer method with validation
-    # @param [Object] banner Value to be assigned
-    def banner=(banner)
-      if banner.nil?
-        fail ArgumentError, 'banner cannot be nil'
-      end
-
-      @banner = banner
-    end
-
-    # Custom attribute writer method with validation
-    # @param [Object] host_key_fp Value to be assigned
-    def host_key_fp=(host_key_fp)
-      if host_key_fp.nil?
-        fail ArgumentError, 'host_key_fp cannot be nil'
-      end
-
-      @host_key_fp = host_key_fp
-    end
-
-    # Custom attribute writer method with validation
-    # @param [Object] session_ok Value to be assigned
-    def session_ok=(session_ok)
-      if session_ok.nil?
-        fail ArgumentError, 'session_ok cannot be nil'
-      end
-
-      @session_ok = session_ok
-    end
-
-    # Custom attribute writer method with validation
-    # @param [Object] first_seen Value to be assigned
-    def first_seen=(first_seen)
-      if first_seen.nil?
-        fail ArgumentError, 'first_seen cannot be nil'
-      end
-
-      @first_seen = first_seen
-    end
-
-    # Custom attribute writer method with validation
-    # @param [Object] last_seen Value to be assigned
-    def last_seen=(last_seen)
-      if last_seen.nil?
-        fail ArgumentError, 'last_seen cannot be nil'
-      end
-
-      @last_seen = last_seen
     end
 
     # Checks equality by comparing each attribute.

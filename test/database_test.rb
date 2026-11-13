@@ -497,7 +497,7 @@ class DatabaseTest < Minitest::Test
     InternetData::Transport::REQUIRED.each do |name, members|
       schema = schemas.fetch(name)
 
-      assert_equal schema.fetch('required').sort, members.map(&:to_s).sort, name
+      assert_equal schema.fetch('required', []).sort, members.map(&:to_s).sort, name
       schema.fetch('properties').each do |member, property|
         [property['items'], property['additionalProperties'], property.dig('additionalProperties', 'items')].compact.each do |inner|
           refute inner['nullable'], "#{name}.#{member}: a nullable entry"

@@ -91,38 +91,26 @@ module InternetData
 
       if attributes.key?(:'port')
         self.port = attributes[:'port']
-      else
-        self.port = nil
       end
 
       if attributes.key?(:'recursion_available')
         self.recursion_available = attributes[:'recursion_available']
-      else
-        self.recursion_available = nil
       end
 
       if attributes.key?(:'rcode')
         self.rcode = attributes[:'rcode']
-      else
-        self.rcode = nil
       end
 
       if attributes.key?(:'answer_correct')
         self.answer_correct = attributes[:'answer_correct']
-      else
-        self.answer_correct = nil
       end
 
       if attributes.key?(:'first_seen')
         self.first_seen = attributes[:'first_seen']
-      else
-        self.first_seen = nil
       end
 
       if attributes.key?(:'last_seen')
         self.last_seen = attributes[:'last_seen']
-      else
-        self.last_seen = nil
       end
     end
 
@@ -131,30 +119,6 @@ module InternetData
     def list_invalid_properties
       warn '[DEPRECATED] the `list_invalid_properties` method is obsolete'
       invalid_properties = Array.new
-      if @port.nil?
-        invalid_properties.push('invalid value for "port", port cannot be nil.')
-      end
-
-      if @recursion_available.nil?
-        invalid_properties.push('invalid value for "recursion_available", recursion_available cannot be nil.')
-      end
-
-      if @rcode.nil?
-        invalid_properties.push('invalid value for "rcode", rcode cannot be nil.')
-      end
-
-      if @answer_correct.nil?
-        invalid_properties.push('invalid value for "answer_correct", answer_correct cannot be nil.')
-      end
-
-      if @first_seen.nil?
-        invalid_properties.push('invalid value for "first_seen", first_seen cannot be nil.')
-      end
-
-      if @last_seen.nil?
-        invalid_properties.push('invalid value for "last_seen", last_seen cannot be nil.')
-      end
-
       invalid_properties
     end
 
@@ -162,73 +126,7 @@ module InternetData
     # @return true if the model is valid
     def valid?
       warn '[DEPRECATED] the `valid?` method is obsolete'
-      return false if @port.nil?
-      return false if @recursion_available.nil?
-      return false if @rcode.nil?
-      return false if @answer_correct.nil?
-      return false if @first_seen.nil?
-      return false if @last_seen.nil?
       true
-    end
-
-    # Custom attribute writer method with validation
-    # @param [Object] port Value to be assigned
-    def port=(port)
-      if port.nil?
-        fail ArgumentError, 'port cannot be nil'
-      end
-
-      @port = port
-    end
-
-    # Custom attribute writer method with validation
-    # @param [Object] recursion_available Value to be assigned
-    def recursion_available=(recursion_available)
-      if recursion_available.nil?
-        fail ArgumentError, 'recursion_available cannot be nil'
-      end
-
-      @recursion_available = recursion_available
-    end
-
-    # Custom attribute writer method with validation
-    # @param [Object] rcode Value to be assigned
-    def rcode=(rcode)
-      if rcode.nil?
-        fail ArgumentError, 'rcode cannot be nil'
-      end
-
-      @rcode = rcode
-    end
-
-    # Custom attribute writer method with validation
-    # @param [Object] answer_correct Value to be assigned
-    def answer_correct=(answer_correct)
-      if answer_correct.nil?
-        fail ArgumentError, 'answer_correct cannot be nil'
-      end
-
-      @answer_correct = answer_correct
-    end
-
-    # Custom attribute writer method with validation
-    # @param [Object] first_seen Value to be assigned
-    def first_seen=(first_seen)
-      if first_seen.nil?
-        fail ArgumentError, 'first_seen cannot be nil'
-      end
-
-      @first_seen = first_seen
-    end
-
-    # Custom attribute writer method with validation
-    # @param [Object] last_seen Value to be assigned
-    def last_seen=(last_seen)
-      if last_seen.nil?
-        fail ArgumentError, 'last_seen cannot be nil'
-      end
-
-      @last_seen = last_seen
     end
 
     # Checks equality by comparing each attribute.

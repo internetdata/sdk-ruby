@@ -111,64 +111,44 @@ module InternetData
 
       if attributes.key?(:'verified')
         self.verified = attributes[:'verified']
-      else
-        self.verified = nil
       end
 
       if attributes.key?(:'id_matches_ip')
         self.id_matches_ip = attributes[:'id_matches_ip']
-      else
-        self.id_matches_ip = nil
       end
 
       if attributes.key?(:'first_seen')
         self.first_seen = attributes[:'first_seen']
-      else
-        self.first_seen = nil
       end
 
       if attributes.key?(:'last_seen')
         self.last_seen = attributes[:'last_seen']
-      else
-        self.last_seen = nil
       end
 
       if attributes.key?(:'last_reachable')
         self.last_reachable = attributes[:'last_reachable']
-      else
-        self.last_reachable = nil
       end
 
       if attributes.key?(:'days_seen')
         self.days_seen = attributes[:'days_seen']
-      else
-        self.days_seen = nil
       end
 
       if attributes.key?(:'num_ports')
         self.num_ports = attributes[:'num_ports']
-      else
-        self.num_ports = nil
       end
 
       if attributes.key?(:'peak_num_ports')
         self.peak_num_ports = attributes[:'peak_num_ports']
-      else
-        self.peak_num_ports = nil
       end
 
       if attributes.key?(:'indexer')
         self.indexer = attributes[:'indexer']
-      else
-        self.indexer = nil
       end
 
       if attributes.key?(:'clients')
         if (value = attributes[:'clients']).is_a?(Array)
           self.clients = value
         end
-      else
-        self.clients = nil
       end
     end
 
@@ -177,46 +157,6 @@ module InternetData
     def list_invalid_properties
       warn '[DEPRECATED] the `list_invalid_properties` method is obsolete'
       invalid_properties = Array.new
-      if @verified.nil?
-        invalid_properties.push('invalid value for "verified", verified cannot be nil.')
-      end
-
-      if @id_matches_ip.nil?
-        invalid_properties.push('invalid value for "id_matches_ip", id_matches_ip cannot be nil.')
-      end
-
-      if @first_seen.nil?
-        invalid_properties.push('invalid value for "first_seen", first_seen cannot be nil.')
-      end
-
-      if @last_seen.nil?
-        invalid_properties.push('invalid value for "last_seen", last_seen cannot be nil.')
-      end
-
-      if @last_reachable.nil?
-        invalid_properties.push('invalid value for "last_reachable", last_reachable cannot be nil.')
-      end
-
-      if @days_seen.nil?
-        invalid_properties.push('invalid value for "days_seen", days_seen cannot be nil.')
-      end
-
-      if @num_ports.nil?
-        invalid_properties.push('invalid value for "num_ports", num_ports cannot be nil.')
-      end
-
-      if @peak_num_ports.nil?
-        invalid_properties.push('invalid value for "peak_num_ports", peak_num_ports cannot be nil.')
-      end
-
-      if @indexer.nil?
-        invalid_properties.push('invalid value for "indexer", indexer cannot be nil.')
-      end
-
-      if @clients.nil?
-        invalid_properties.push('invalid value for "clients", clients cannot be nil.')
-      end
-
       invalid_properties
     end
 
@@ -224,117 +164,7 @@ module InternetData
     # @return true if the model is valid
     def valid?
       warn '[DEPRECATED] the `valid?` method is obsolete'
-      return false if @verified.nil?
-      return false if @id_matches_ip.nil?
-      return false if @first_seen.nil?
-      return false if @last_seen.nil?
-      return false if @last_reachable.nil?
-      return false if @days_seen.nil?
-      return false if @num_ports.nil?
-      return false if @peak_num_ports.nil?
-      return false if @indexer.nil?
-      return false if @clients.nil?
       true
-    end
-
-    # Custom attribute writer method with validation
-    # @param [Object] verified Value to be assigned
-    def verified=(verified)
-      if verified.nil?
-        fail ArgumentError, 'verified cannot be nil'
-      end
-
-      @verified = verified
-    end
-
-    # Custom attribute writer method with validation
-    # @param [Object] id_matches_ip Value to be assigned
-    def id_matches_ip=(id_matches_ip)
-      if id_matches_ip.nil?
-        fail ArgumentError, 'id_matches_ip cannot be nil'
-      end
-
-      @id_matches_ip = id_matches_ip
-    end
-
-    # Custom attribute writer method with validation
-    # @param [Object] first_seen Value to be assigned
-    def first_seen=(first_seen)
-      if first_seen.nil?
-        fail ArgumentError, 'first_seen cannot be nil'
-      end
-
-      @first_seen = first_seen
-    end
-
-    # Custom attribute writer method with validation
-    # @param [Object] last_seen Value to be assigned
-    def last_seen=(last_seen)
-      if last_seen.nil?
-        fail ArgumentError, 'last_seen cannot be nil'
-      end
-
-      @last_seen = last_seen
-    end
-
-    # Custom attribute writer method with validation
-    # @param [Object] last_reachable Value to be assigned
-    def last_reachable=(last_reachable)
-      if last_reachable.nil?
-        fail ArgumentError, 'last_reachable cannot be nil'
-      end
-
-      @last_reachable = last_reachable
-    end
-
-    # Custom attribute writer method with validation
-    # @param [Object] days_seen Value to be assigned
-    def days_seen=(days_seen)
-      if days_seen.nil?
-        fail ArgumentError, 'days_seen cannot be nil'
-      end
-
-      @days_seen = days_seen
-    end
-
-    # Custom attribute writer method with validation
-    # @param [Object] num_ports Value to be assigned
-    def num_ports=(num_ports)
-      if num_ports.nil?
-        fail ArgumentError, 'num_ports cannot be nil'
-      end
-
-      @num_ports = num_ports
-    end
-
-    # Custom attribute writer method with validation
-    # @param [Object] peak_num_ports Value to be assigned
-    def peak_num_ports=(peak_num_ports)
-      if peak_num_ports.nil?
-        fail ArgumentError, 'peak_num_ports cannot be nil'
-      end
-
-      @peak_num_ports = peak_num_ports
-    end
-
-    # Custom attribute writer method with validation
-    # @param [Object] indexer Value to be assigned
-    def indexer=(indexer)
-      if indexer.nil?
-        fail ArgumentError, 'indexer cannot be nil'
-      end
-
-      @indexer = indexer
-    end
-
-    # Custom attribute writer method with validation
-    # @param [Object] clients Value to be assigned
-    def clients=(clients)
-      if clients.nil?
-        fail ArgumentError, 'clients cannot be nil'
-      end
-
-      @clients = clients
     end
 
     # Checks equality by comparing each attribute.

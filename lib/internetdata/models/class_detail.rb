@@ -81,26 +81,18 @@ module InternetData
 
       if attributes.key?(:'provider')
         self.provider = attributes[:'provider']
-      else
-        self.provider = nil
       end
 
       if attributes.key?(:'provider_name')
         self.provider_name = attributes[:'provider_name']
-      else
-        self.provider_name = nil
       end
 
       if attributes.key?(:'confidence')
         self.confidence = attributes[:'confidence']
-      else
-        self.confidence = nil
       end
 
       if attributes.key?(:'last_seen')
         self.last_seen = attributes[:'last_seen']
-      else
-        self.last_seen = nil
       end
     end
 
@@ -109,22 +101,6 @@ module InternetData
     def list_invalid_properties
       warn '[DEPRECATED] the `list_invalid_properties` method is obsolete'
       invalid_properties = Array.new
-      if @provider.nil?
-        invalid_properties.push('invalid value for "provider", provider cannot be nil.')
-      end
-
-      if @provider_name.nil?
-        invalid_properties.push('invalid value for "provider_name", provider_name cannot be nil.')
-      end
-
-      if @confidence.nil?
-        invalid_properties.push('invalid value for "confidence", confidence cannot be nil.')
-      end
-
-      if @last_seen.nil?
-        invalid_properties.push('invalid value for "last_seen", last_seen cannot be nil.')
-      end
-
       invalid_properties
     end
 
@@ -132,51 +108,7 @@ module InternetData
     # @return true if the model is valid
     def valid?
       warn '[DEPRECATED] the `valid?` method is obsolete'
-      return false if @provider.nil?
-      return false if @provider_name.nil?
-      return false if @confidence.nil?
-      return false if @last_seen.nil?
       true
-    end
-
-    # Custom attribute writer method with validation
-    # @param [Object] provider Value to be assigned
-    def provider=(provider)
-      if provider.nil?
-        fail ArgumentError, 'provider cannot be nil'
-      end
-
-      @provider = provider
-    end
-
-    # Custom attribute writer method with validation
-    # @param [Object] provider_name Value to be assigned
-    def provider_name=(provider_name)
-      if provider_name.nil?
-        fail ArgumentError, 'provider_name cannot be nil'
-      end
-
-      @provider_name = provider_name
-    end
-
-    # Custom attribute writer method with validation
-    # @param [Object] confidence Value to be assigned
-    def confidence=(confidence)
-      if confidence.nil?
-        fail ArgumentError, 'confidence cannot be nil'
-      end
-
-      @confidence = confidence
-    end
-
-    # Custom attribute writer method with validation
-    # @param [Object] last_seen Value to be assigned
-    def last_seen=(last_seen)
-      if last_seen.nil?
-        fail ArgumentError, 'last_seen cannot be nil'
-      end
-
-      @last_seen = last_seen
     end
 
     # Checks equality by comparing each attribute.

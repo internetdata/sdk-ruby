@@ -96,46 +96,32 @@ module InternetData
 
       if attributes.key?(:'entry')
         self.entry = attributes[:'entry']
-      else
-        self.entry = nil
       end
 
       if attributes.key?(:'exit')
         self.exit = attributes[:'exit']
-      else
-        self.exit = nil
       end
 
       if attributes.key?(:'protocols')
         if (value = attributes[:'protocols']).is_a?(Array)
           self.protocols = value
         end
-      else
-        self.protocols = nil
       end
 
       if attributes.key?(:'num_ports')
         self.num_ports = attributes[:'num_ports']
-      else
-        self.num_ports = nil
       end
 
       if attributes.key?(:'num_proxies')
         self.num_proxies = attributes[:'num_proxies']
-      else
-        self.num_proxies = nil
       end
 
       if attributes.key?(:'last_seen')
         self.last_seen = attributes[:'last_seen']
-      else
-        self.last_seen = nil
       end
 
       if attributes.key?(:'last_usable')
         self.last_usable = attributes[:'last_usable']
-      else
-        self.last_usable = nil
       end
     end
 
@@ -144,34 +130,6 @@ module InternetData
     def list_invalid_properties
       warn '[DEPRECATED] the `list_invalid_properties` method is obsolete'
       invalid_properties = Array.new
-      if @entry.nil?
-        invalid_properties.push('invalid value for "entry", entry cannot be nil.')
-      end
-
-      if @exit.nil?
-        invalid_properties.push('invalid value for "exit", exit cannot be nil.')
-      end
-
-      if @protocols.nil?
-        invalid_properties.push('invalid value for "protocols", protocols cannot be nil.')
-      end
-
-      if @num_ports.nil?
-        invalid_properties.push('invalid value for "num_ports", num_ports cannot be nil.')
-      end
-
-      if @num_proxies.nil?
-        invalid_properties.push('invalid value for "num_proxies", num_proxies cannot be nil.')
-      end
-
-      if @last_seen.nil?
-        invalid_properties.push('invalid value for "last_seen", last_seen cannot be nil.')
-      end
-
-      if @last_usable.nil?
-        invalid_properties.push('invalid value for "last_usable", last_usable cannot be nil.')
-      end
-
       invalid_properties
     end
 
@@ -179,84 +137,7 @@ module InternetData
     # @return true if the model is valid
     def valid?
       warn '[DEPRECATED] the `valid?` method is obsolete'
-      return false if @entry.nil?
-      return false if @exit.nil?
-      return false if @protocols.nil?
-      return false if @num_ports.nil?
-      return false if @num_proxies.nil?
-      return false if @last_seen.nil?
-      return false if @last_usable.nil?
       true
-    end
-
-    # Custom attribute writer method with validation
-    # @param [Object] entry Value to be assigned
-    def entry=(entry)
-      if entry.nil?
-        fail ArgumentError, 'entry cannot be nil'
-      end
-
-      @entry = entry
-    end
-
-    # Custom attribute writer method with validation
-    # @param [Object] exit Value to be assigned
-    def exit=(exit)
-      if exit.nil?
-        fail ArgumentError, 'exit cannot be nil'
-      end
-
-      @exit = exit
-    end
-
-    # Custom attribute writer method with validation
-    # @param [Object] protocols Value to be assigned
-    def protocols=(protocols)
-      if protocols.nil?
-        fail ArgumentError, 'protocols cannot be nil'
-      end
-
-      @protocols = protocols
-    end
-
-    # Custom attribute writer method with validation
-    # @param [Object] num_ports Value to be assigned
-    def num_ports=(num_ports)
-      if num_ports.nil?
-        fail ArgumentError, 'num_ports cannot be nil'
-      end
-
-      @num_ports = num_ports
-    end
-
-    # Custom attribute writer method with validation
-    # @param [Object] num_proxies Value to be assigned
-    def num_proxies=(num_proxies)
-      if num_proxies.nil?
-        fail ArgumentError, 'num_proxies cannot be nil'
-      end
-
-      @num_proxies = num_proxies
-    end
-
-    # Custom attribute writer method with validation
-    # @param [Object] last_seen Value to be assigned
-    def last_seen=(last_seen)
-      if last_seen.nil?
-        fail ArgumentError, 'last_seen cannot be nil'
-      end
-
-      @last_seen = last_seen
-    end
-
-    # Custom attribute writer method with validation
-    # @param [Object] last_usable Value to be assigned
-    def last_usable=(last_usable)
-      if last_usable.nil?
-        fail ArgumentError, 'last_usable cannot be nil'
-      end
-
-      @last_usable = last_usable
     end
 
     # Checks equality by comparing each attribute.

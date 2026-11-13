@@ -86,32 +86,22 @@ module InternetData
 
       if attributes.key?(:'name')
         self.name = attributes[:'name']
-      else
-        self.name = nil
       end
 
       if attributes.key?(:'mcc')
         self.mcc = attributes[:'mcc']
-      else
-        self.mcc = nil
       end
 
       if attributes.key?(:'mnc')
         self.mnc = attributes[:'mnc']
-      else
-        self.mnc = nil
       end
 
       if attributes.key?(:'country')
         self.country = attributes[:'country']
-      else
-        self.country = nil
       end
 
       if attributes.key?(:'confidence')
         self.confidence = attributes[:'confidence']
-      else
-        self.confidence = nil
       end
     end
 
@@ -120,26 +110,6 @@ module InternetData
     def list_invalid_properties
       warn '[DEPRECATED] the `list_invalid_properties` method is obsolete'
       invalid_properties = Array.new
-      if @name.nil?
-        invalid_properties.push('invalid value for "name", name cannot be nil.')
-      end
-
-      if @mcc.nil?
-        invalid_properties.push('invalid value for "mcc", mcc cannot be nil.')
-      end
-
-      if @mnc.nil?
-        invalid_properties.push('invalid value for "mnc", mnc cannot be nil.')
-      end
-
-      if @country.nil?
-        invalid_properties.push('invalid value for "country", country cannot be nil.')
-      end
-
-      if @confidence.nil?
-        invalid_properties.push('invalid value for "confidence", confidence cannot be nil.')
-      end
-
       invalid_properties
     end
 
@@ -147,62 +117,7 @@ module InternetData
     # @return true if the model is valid
     def valid?
       warn '[DEPRECATED] the `valid?` method is obsolete'
-      return false if @name.nil?
-      return false if @mcc.nil?
-      return false if @mnc.nil?
-      return false if @country.nil?
-      return false if @confidence.nil?
       true
-    end
-
-    # Custom attribute writer method with validation
-    # @param [Object] name Value to be assigned
-    def name=(name)
-      if name.nil?
-        fail ArgumentError, 'name cannot be nil'
-      end
-
-      @name = name
-    end
-
-    # Custom attribute writer method with validation
-    # @param [Object] mcc Value to be assigned
-    def mcc=(mcc)
-      if mcc.nil?
-        fail ArgumentError, 'mcc cannot be nil'
-      end
-
-      @mcc = mcc
-    end
-
-    # Custom attribute writer method with validation
-    # @param [Object] mnc Value to be assigned
-    def mnc=(mnc)
-      if mnc.nil?
-        fail ArgumentError, 'mnc cannot be nil'
-      end
-
-      @mnc = mnc
-    end
-
-    # Custom attribute writer method with validation
-    # @param [Object] country Value to be assigned
-    def country=(country)
-      if country.nil?
-        fail ArgumentError, 'country cannot be nil'
-      end
-
-      @country = country
-    end
-
-    # Custom attribute writer method with validation
-    # @param [Object] confidence Value to be assigned
-    def confidence=(confidence)
-      if confidence.nil?
-        fail ArgumentError, 'confidence cannot be nil'
-      end
-
-      @confidence = confidence
     end
 
     # Checks equality by comparing each attribute.

@@ -286,7 +286,6 @@ class ClientTest < Minitest::Test
     'a flag of 1' => { 'is_vpn' => 1 },
     'is_bogon of null' => { 'is_bogon' => nil },
     'a detail of "x"' => { 'vpn' => 'x' },
-    'a detail missing a member' => { 'tor' => CLASS_DETAIL.except('confidence') },
     'a numeric string in a detail' => {
       'dcproxy' => { 'provider' => 'p', 'provider_name' => 'P', 'first_seen' => '', 'last_seen' => '',
                      'hits' => '3', 'hits_days_pct' => 1, 'providers_num' => 1 },
@@ -315,15 +314,16 @@ class ClientTest < Minitest::Test
   DOMAIN_WRONG_TYPED = {
     'is_registered of "yes"' => { 'is_registered' => 'yes' },
     'a null A record' => { 'dns' => { 'a' => [nil], 'aaaa' => [], 'mx' => [], 'ns' => [], 'cname' => [] } },
-    'a disposable detail missing a member' => {
-      'is_disposable' => true, 'disposable' => { 'confidence' => 'high' },
+    'an IP range without its country' => {
+      'ip_ranges' => { 'domain' => 'example.com', 'redirects_to' => '', 'total' => 1, 'ipv4' => 256,
+                       'ranges' => [{ 'range' => '192.0.2.0/24', 'name' => 'EXAMPLE-NET' }] },
     },
     'has_mx missing' => { 'has_mx' => nil },
   }.freeze
 
-  # A member of the wrong type, a null the spec does not allow or a populated
-  # detail missing a member it requires is the server breaking its contract, a
-  # retried server error rather than an answer.
+  # A member of the wrong type, or a null or an absence the spec does not allow,
+  # is the server breaking its contract: a retried server error rather than an
+  # answer.
   def test_a_member_of_the_wrong_type_is_a_retried_server_error
     client = InternetData::Client.new(cache: false, retries: 1)
     answers = WRONG_TYPED.to_h do |name, member|
@@ -362,20 +362,21 @@ class ClientTest < Minitest::Test
     end
   end
 
-  # An empty detail is present and empty under a false flag, a populated one
-  # reads whole, and a null in a member the spec does not require reads as
-  # absent.
+  # A detail object requires no member: an empty one is present and empty under
+  # a false flag, a populated one reads as served, and a null in a member the
+  # spec does not require reads as absent.
   def test_an_empty_detail_and_a_null_paid_member_read
+    partial = CLASS_DETAIL.except('confidence')
     stub_lookups(
       '1.1.1.1' => { body: OK_BODY.merge('is_vpn' => false, 'vpn' => {}, 'web' => [], 'is_cdn' => nil) },
-      '2.2.2.2' => { body: answer('2.2.2.2', 'is_tor' => true, 'tor' => CLASS_DETAIL) },
+      '2.2.2.2' => { body: answer('2.2.2.2', 'is_tor' => true, 'tor' => partial) },
       'domain/example.com' => { body: DOMAIN_BODY.merge('is_disposable' => false, 'disposable' => {}) },
     )
     client = InternetData::Client.new
 
     one = client.lookup('1.1.1.1')
     assert_equal [{}, [], nil, false], [one.vpn, one.web, one.is_cdn, one.cdn?]
-    assert_equal CLASS_DETAIL, client.lookup('2.2.2.2').tor
+    assert_equal partial, client.lookup('2.2.2.2').tor
     assert_equal({}, client.lookup_domain('example.com').disposable)
   end
 
@@ -399,19 +400,6 @@ class ClientTest < Minitest::Test
       assert_equal 200, answers[ip].status, ip
     end
     assert_equal 1, sent, 'one unreadable entry does not retry the chunk'
-  end
-
-  # The detail models are the spec's `allOf` members, each `{}` under a false
-  # flag; a model the spec never writes that way must not read an empty object.
-  def test_the_details_that_may_be_empty_are_the_specs
-    spec = YAML.safe_load_file(File.expand_path('../spec/openapi.yaml', __dir__))
-    details = %w[LookupResponse AsnLookupResponse DomainLookupResponse].flat_map do |name|
-      spec.dig('components', 'schemas', name, 'properties').values.filter_map do |property|
-        property['allOf']&.first&.fetch('$ref')&.split('/')&.last
-      end
-    end
-
-    assert_equal details.uniq.sort, InternetData::Transport::DETAILS.sort
   end
 
   # The lookups build their own requests, so their paths are held to the
