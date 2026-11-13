@@ -35,6 +35,44 @@ class ClientTest < Minitest::Test
     assert_equal ['https://api.internetdata.io/api/v2/database/list'], calls.map(&:url)
   end
 
+  # The spec gives each lookup path a server of its own, production's, so every
+  # call is served from a local base URL here, and anything reaching
+  # production's hosts is recorded instead of sent.
+  def test_every_request_goes_to_the_clients_base_url
+    production = []
+    Typhoeus.stub(%r{\Ahttps?://([^/]*\.)?internetdata\.io/}).and_return do |request|
+      production << request.url
+      json_response(500, { 'error' => 'sent to production' })
+    end
+    server = TestServer.new(delay: 0) do |path, body|
+      case path
+      when '/batch' then [200, TestServer.batch_body(body)]
+      when '/asn/9009' then [200, JSON.generate(ASN_BODY)]
+      when '/domain/example.com' then [200, JSON.generate(DOMAIN_BODY)]
+      when '/api/v1/entitlement' then [200, JSON.generate(ENTITLEMENT_BODY)]
+      when '/api/v2/database/list' then [200, JSON.generate({ 'databases' => [] })]
+      else [200, JSON.generate(answer(path == '/myip' ? '146.70.116.130' : path[1..]))]
+      end
+    end
+    client = InternetData::Client.new(base_url: server.base_url, cache: false, retries: 0)
+
+    [
+      -> { client.lookup('1.1.1.1') }, -> { client.lookup_asn(9009) }, -> { client.lookup_domain('example.com') },
+      -> { client.my_ip }, -> { client.my_entitlement }, -> { client.lookup_batch(%w[1.1.1.1 8.8.8.8]) },
+      -> { client.database.list }
+    ].each do |call|
+      call.call
+    rescue InternetData::Error
+      nil
+    end
+
+    assert_empty production
+    assert_equal %w[/1.1.1.1 /asn/9009 /domain/example.com /myip /api/v1/entitlement /batch /api/v2/database/list],
+                 server.paths
+  ensure
+    server&.stop
+  end
+
   # The issuer is the apex and the API host serves no OAuth route, so the oauth
   # accessor alone derives its host from the base URL.
   def test_oauth_signs_in_at_the_apex_of_the_api_host

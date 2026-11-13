@@ -64,6 +64,10 @@ module InternetData
         self.scheme = uri.scheme
         self.host = uri.port == uri.default_port ? uri.host : "#{uri.host}:#{uri.port}"
         self.base_path = uri.path
+        # Every request goes to this base URL. The spec gives each lookup path a
+        # server of its own, production's, which an operation the generator
+        # emitted would otherwise be sent to whatever base URL the client has.
+        self.ignore_operation_servers = true
         self.access_token = Transport.checked_key(api_key)
         self.timeout = timeout.nil? ? nil : Transport.checked_timeout(timeout)
       end
