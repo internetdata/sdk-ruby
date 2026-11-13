@@ -89,6 +89,8 @@ module InternetData
     #
     # @param retries [Integer, nil] extra attempts, for THIS call only.
     # @param timeout [Numeric, nil] seconds each attempt may take, for THIS call only.
+    # @raise [Error] `:bad_request`, before any request, for anything but an IP
+    #   address: {#lookup_asn} and {#lookup_domain} look an AS and a domain up.
     # @return [Result]
     def lookup(ip, retries: nil, timeout: nil)
       # Here as well as in the transport: a bogon or a cached answer returns before any request.
@@ -96,6 +98,12 @@ module InternetData
       Retries.checked_count(retries) unless retries.nil?
       # Judged, cached and sent as the IPv4 address it carries, if it is mapped.
       ip = Bogon.unmapped(ip)
+      # The API answers an AS or a domain at this path too, as an answer this call
+      # cannot read, so one is refused unsent rather than retried as unreadable.
+      unless Bogon.address?(ip)
+        raise Error.new(:bad_request, "#{ip.inspect} is not an IP address: look an AS up with lookup_asn " \
+                                      'and a domain with lookup_domain')
+      end
       return Bogon.result(ip) if Bogon.bogon?(ip)
 
       loop do

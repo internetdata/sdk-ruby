@@ -178,6 +178,22 @@ class ClientTest < Minitest::Test
                  calls
   end
 
+  # The API answers an AS or a domain at an address's path too, as an answer
+  # lookup cannot read, so anything but an address is refused unsent.
+  def test_lookup_refuses_anything_but_an_ip_address_before_sending_it
+    calls = stub_lookups('example.com' => { body: DOMAIN_BODY }, '9009' => { body: ASN_BODY })
+    client = InternetData::Client.new(retries: 2)
+
+    ['example.com', 'AS9009', 9009, 'notanip', '10.0.0.0/8', '', nil].each do |target|
+      error = assert_raises(InternetData::Error, target.inspect) { client.lookup(target) }
+
+      assert_equal :bad_request, error.kind, target.inspect
+      refute error.retryable?, target.inspect
+      assert_match(/lookup_asn .*lookup_domain/, error.message, target.inspect)
+    end
+    assert_empty calls, 'nothing but an address was sent'
+  end
+
   def test_an_asn_or_a_domain_the_api_cannot_read_is_a_bad_request_asked_once
     calls = stub_lookups({})
     client = InternetData::Client.new(retries: 2)

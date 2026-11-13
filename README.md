@@ -61,7 +61,7 @@ domain.is_registered           # => true
 domain.dns                     # its records, on a paid plan
 ```
 
-Both are sent as you give them, and the API reads `AS9009` and an internationalized domain too. Neither is cached.
+Both are sent as you give them, and the API reads `AS9009` and an internationalized domain too. Neither is cached. `lookup` takes an IP address alone, and raises a `:bad_request` for anything else before sending it.
 
 ### Your own address
 

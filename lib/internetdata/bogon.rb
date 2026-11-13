@@ -30,6 +30,11 @@ module InternetData
       (addr.ipv4? ? v4 : v6).any? { |range| range.include?(addr) }
     end
 
+    # Whether `ip` reads as one IP address; a prefix is not one.
+    def address?(ip)
+      !parse(ip).nil?
+    end
+
     # The IPv4 address an IPv4-mapped IPv6 address (::ffff:a.b.c.d, in any
     # spelling) carries, dotted, and any other address as given. A server
     # listening on :: sees every IPv4 visitor in that form, which read whole is
