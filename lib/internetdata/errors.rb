@@ -21,6 +21,8 @@ module InternetData
     # The API's machine-readable result code, when the refusal carried one:
     # `NOT_LICENSED`, `UNKNOWN_DATASET`, `NOT_AVAILABLE` and so on. Deliberately
     # not an enum, so a code added later stays readable by a client built today.
+    # A database call's refusal carries one; a lookup's carries none, and its
+    # message is the API's own words.
     attr_reader :kind, :status, :rc, :retry_after_seconds
 
     def initialize(kind, message, status: nil, rc: nil, retry_after_seconds: nil)
@@ -41,7 +43,7 @@ module InternetData
     # from it is classified on the status alone.
     def self.from_status(status, headers, body, message: nil)
       rc = rc_of(body)
-      message ||= rc || "request failed with status #{status}"
+      message ||= message_of(body) || "request failed with status #{status}"
       retry_after = parse_retry_after(header(headers, 'retry-after'))
       kind = kind_for(status, headers)
 
@@ -73,6 +75,13 @@ module InternetData
       new(:network, message)
     end
 
+    # A per-entry failure inside a successful batch: the status the single lookup
+    # would have answered, and its message, with no headers at all - so a 429
+    # here is a spent allowance, which is the only kind the API puts in an entry.
+    def self.from_entry(status, message)
+      from_status(status.to_i, {}, nil, message: message.to_s)
+    end
+
     # Case-insensitive, and works with a plain Hash as well as with the
     # case-blind header object Typhoeus builds from a live response.
     def self.header(headers, name)
@@ -83,14 +92,28 @@ module InternetData
       value.is_a?(Array) ? value.last : value
     end
 
-    # Every refusal this API writes is a `{"rc": "..."}` envelope. An
-    # intermediary's HTML error page parses as neither JSON nor that, and leaves
-    # the status to speak for itself.
+    # The two APIs behind this host answer with different envelopes: the lookup
+    # endpoints use `error`, the database endpoints `rc`. Both are read here so a
+    # caller never has to know which one they hit. An intermediary's HTML error
+    # page parses as neither and leaves the status to speak for itself.
+    def self.message_of(body)
+      parsed = parse_body(body)
+      return nil unless parsed.is_a?(Hash)
+
+      message = parsed['error'] || parsed['rc']
+      message.is_a?(String) && !message.empty? ? message : nil
+    end
+
+    # A database refusal's `{"rc": "..."}` code; a lookup refusal carries none.
     def self.rc_of(body)
-      parsed = body.is_a?(String) ? (JSON.parse(body) rescue nil) : body
+      parsed = parse_body(body)
       return nil unless parsed.is_a?(Hash)
 
       parsed['rc'].is_a?(String) && !parsed['rc'].empty? ? parsed['rc'] : nil
+    end
+
+    def self.parse_body(body)
+      body.is_a?(String) ? (JSON.parse(body) rescue nil) : body
     end
 
     # Seconds as digits, or an HTTP date, and nothing else: `Float()` would also
@@ -109,7 +132,7 @@ module InternetData
       [0, (when_at - Time.now).ceil].max
     end
 
-    private_class_method :header, :rc_of, :parse_retry_after
+    private_class_method :header, :message_of, :rc_of, :parse_body, :parse_retry_after
   end
 
   # The authorization server refusing an OAuth request: a 4xx whose body names an

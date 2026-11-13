@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require 'cgi'
 require 'json'
 require 'uri'
 
@@ -7,6 +8,21 @@ module InternetData
   # The generated wire client, with the three things it gets wrong for this API
   # corrected in one place.
   class Transport < ApiClient
+    # The spec's path templates for the lookups, which the client builds itself:
+    # no generated class holds them, since a batch queues its requests on a hydra
+    # and the generated methods run each request as they build it. The suite
+    # holds each one to spec/openapi.yaml.
+    LOOKUP_PATH = '/{ip}'
+    MYIP_PATH = '/myip'
+    ASN_PATH = '/asn/{asn}'
+    DOMAIN_PATH = '/domain/{domain}'
+    ENTITLEMENT_PATH = '/api/v1/entitlement'
+    BATCH_PATH = '/batch'
+    # The lookups' operations spell their bearer scheme `bearerAuth` and the
+    # database's `BearerAuth`. Config answers the one bearer this client sends
+    # under the database's spelling, so a lookup names that.
+    LOOKUP_AUTH = %w[BearerAuth].freeze
+
     # The longest `timeout` curl holds, in seconds: 2**31 - 1 ms, about 24.8 days.
     # libcurl refuses a longer one, and any negative, and Ethon ignores the
     # refusal, so the call would run with no bound at all.
@@ -76,7 +92,7 @@ module InternetData
       end
     end
 
-    def initialize(config)
+    def initialize(config = Config.new)
       super
       @default_headers['User-Agent'] = "internetdata-ruby/#{VERSION}"
     end
@@ -97,6 +113,24 @@ module InternetData
       request
     end
 
+    # A request built with `oauth: true` goes to the authorization server, the
+    # rest to the API.
+    def build_request_url(path, opts = {})
+      opts[:oauth] ? "#{oauth_base_url}#{path}" : super
+    end
+
+    # Where the authorization server answers: the apex the API host is named
+    # under, since the issuer is the apex and the API host serves no OAuth
+    # route. `api.` is dropped and `api-<env>.` becomes `<env>.`, so
+    # `https://api.internetdata.io` signs in at `https://internetdata.io`; any
+    # other base URL is used as given.
+    def oauth_base_url
+      @config.base_url.sub(%r{\A(https?://)api(?:-([^./:]+))?\.}i) do
+        env = Regexp.last_match(2)
+        "#{Regexp.last_match(1)}#{env ? "#{env}." : ''}"
+      end
+    end
+
     # A 2xx the generated client cannot read as the answer it promises is the
     # server's fault, and a retryable :server_error, as it is on the OAuth calls:
     # a proxy's HTML page, a cut-off or empty body, or an object missing a member
@@ -112,7 +146,7 @@ module InternetData
       data = super
       raise Error.new(:server_error, "the API answered with no #{return_type}", status: response.code) if data.nil?
 
-      check_type!(JSON.parse(response.body, symbolize_names: true), return_type.to_s, 'the answer') if return_type
+      Transport.check_type!(JSON.parse(response.body.to_s), return_type.to_s, 'the answer') if return_type
       data
     rescue Error
       raise
@@ -158,10 +192,109 @@ module InternetData
       headers = { 'Accept' => 'application/json' }
       headers['Content-Type'] = 'application/x-www-form-urlencoded' unless form.nil?
       headers['Content-Type'] = 'application/json' unless json.nil?
-      request = build_request(http_method, path, header_params: headers, auth_names: [], timeout: timeout)
+      request = build_request(http_method, path, header_params: headers, auth_names: [], timeout: timeout,
+                                                 oauth: true)
       request.options[:body] = URI.encode_www_form(form) unless form.nil?
       request.options[:body] = JSON.generate(json) unless json.nil?
       request
+    end
+
+    def lookup_request(ip, timeout: nil)
+      lookup_get(LOOKUP_PATH.sub('{ip}', CGI.escape(ip.to_s)), timeout)
+    end
+
+    def myip_request(timeout: nil)
+      lookup_get(MYIP_PATH, timeout)
+    end
+
+    def asn_request(asn, timeout: nil)
+      lookup_get(ASN_PATH.sub('{asn}', CGI.escape(asn.to_s)), timeout)
+    end
+
+    def domain_request(domain, timeout: nil)
+      lookup_get(DOMAIN_PATH.sub('{domain}', CGI.escape(domain.to_s)), timeout)
+    end
+
+    def entitlement_request(timeout: nil)
+      lookup_get(ENTITLEMENT_PATH, timeout)
+    end
+
+    # The one request with a body: the batch.
+    def batch_request(ips, timeout: nil)
+      build_request(
+        :POST, BATCH_PATH,
+        header_params: { 'Accept' => 'application/json', 'Content-Type' => 'application/json' },
+        body: { ips: ips },
+        auth_names: LOOKUP_AUTH,
+        timeout: timeout,
+      )
+    end
+
+    def self.entitlement_result(response)
+      body = answer(response)
+      begin
+        check_type!(body, 'Entitlement', 'the answer')
+        Entitlement.build_from_hash(body)
+      rescue StandardError => e
+        raise Error.new(:server_error, "could not read the answer as Entitlement: #{e.message}",
+                        status: response.code)
+      end
+    end
+
+    def self.lookup_result(response)
+      Result.new(checked_answer(response, 'LookupResponse'))
+    end
+
+    def self.asn_result(response)
+      AsnResult.new(checked_answer(response, 'AsnLookupResponse'))
+    end
+
+    def self.domain_result(response)
+      DomainResult.new(checked_answer(response, 'DomainLookupResponse'))
+    end
+
+    # Whether a parsed value is the generated `type`: a batch entry that is not
+    # is that address's error alone.
+    def self.conforms?(value, type)
+      check_type!(value, type, 'the entry')
+    rescue TypeError
+      false
+    end
+
+    # The two maps of a batch answer, each present even when empty. An answer
+    # carrying neither is unreadable as a whole, and is retried as one.
+    def self.batch_body(response)
+      body = answer(response)
+      unless body['results'].is_a?(Hash) || body['errors'].is_a?(Hash)
+        raise Error.new(:server_error, 'the batch answer carried neither results nor errors',
+                        status: response.code)
+      end
+
+      {
+        'results' => body['results'].is_a?(Hash) ? body['results'] : {},
+        'errors' => body['errors'].is_a?(Hash) ? body['errors'] : {},
+      }
+    end
+
+    # The JSON object a 2xx lookup answer carries; anything else raises the
+    # error its status or its unreadable body maps to.
+    def self.answer(response)
+      raise Error.from_transport(response) if transport_failure?(response)
+      raise Error.from_status(response.code, response.headers, response.body) unless response.success?
+
+      parse_object(response)
+    end
+
+    # The answer, once every member it carries has the spec's type.
+    def self.checked_answer(response, type)
+      body = answer(response)
+      begin
+        check_type!(body, type, 'the answer')
+      rescue TypeError => e
+        raise Error.new(:server_error, "could not read the answer as #{type}: #{e.message}",
+                        status: response.code)
+      end
+      body
     end
 
     # The JSON object a 2xx OAuth answer carries. A refusal the authorization
@@ -209,14 +342,54 @@ module InternetData
                       status: response.code)
     end
 
-    private_class_method :transport_failure?, :parse_object, :oauth_refusal
+    private_class_method :transport_failure?, :parse_object, :oauth_refusal, :answer, :checked_answer
 
-    # The members the spec requires of each answer a database call reads. One of
-    # them that is not nullable must be there and not null: the generated reader
-    # skips the writer of a list or map member that is not one, so `"versions":
-    # null` came back as a family with no versions (2.8.1, measured 2026-10-19).
-    # test/database_test.rb holds this to spec/openapi.yaml.
+    # The members the spec requires of each answer a lookup, a batch, the
+    # entitlement or a database call reads. One that is not nullable must be
+    # there and not null: the generated reader skips the writer of a list or map
+    # member that is not one, so `"versions": null` came back as a family with no
+    # versions (2.8.1, measured 2026-10-19). A member the spec does not require is
+    # one a plan may leave out. test/database_test.rb holds this to
+    # spec/openapi.yaml.
     REQUIRED = {
+      'LookupResponse' => %i[ip is_bogon is_tor is_relay is_anycast is_carrier is_satellite is_ssh is_smtp
+                             is_web is_dns_resolver is_bittorrent tor relay location asn company hostname abuse],
+      'ClassDetail' => %i[provider provider_name confidence last_seen],
+      'ProxyDetail' => %i[provider provider_name first_seen last_seen hits hits_days_pct providers_num],
+      'PubproxyDetail' => %i[entry exit protocols num_ports num_proxies last_seen last_usable],
+      'CarrierDetail' => %i[name mcc mnc country confidence],
+      'SatelliteDetail' => %i[provider provider_name orbit segment country asn confidence],
+      'SshDetail' => %i[port banner host_key_fp session_ok first_seen last_seen],
+      'SmtpDetail' => %i[port banner session_ok first_seen last_seen],
+      'WebDetail' => %i[port tls_ok session_ok status_code server location title cert_subject_cn
+                        cert_subject_o cert_issuer_dn cert_browser_trusted tls_version first_seen last_seen],
+      'DnsResolverDetail' => %i[port recursion_available rcode answer_correct first_seen last_seen],
+      'BitTorrentDetail' => %i[verified id_matches_ip first_seen last_seen last_reachable days_seen num_ports
+                               peak_num_ports indexer clients],
+      'Location' => %i[continent continent_name country country_name timezone currency_code currency_name
+                       currency_symbol flag_emoji flag_unicode],
+      'Asn' => %i[asn name domain type prefix],
+      'Company' => %i[name domain],
+      'AbuseContact' => %i[email],
+      'Whois' => %i[id name org country status source domain abuse_email asn],
+      'Rwhois' => %i[id name country source domain abuse_email],
+      'HostedDomains' => %i[total],
+      'AsnLookupResponse' => %i[asn name country registry allocated domain],
+      'AsnPrefix' => %i[prefix peer_count rpki_status first_seen country size other_origins],
+      'DomainLookupResponse' => %i[domain is_registered has_a has_aaaa has_mx has_ns has_cname],
+      'DomainDns' => %i[a aaaa mx ns cname],
+      'DnsAddressRecord' => %i[ip last_seen],
+      'DnsMxRecord' => %i[priority host last_seen],
+      'DnsNsRecord' => %i[host last_seen],
+      'DnsCnameRecord' => %i[target last_seen],
+      'DomainIpRanges' => %i[domain redirects_to total ipv4 ranges],
+      'DomainIpRange' => %i[range name country],
+      'DisposableDetail' => %i[confidence providers first_seen last_seen],
+      'BatchLookupError' => %i[status error],
+      'Entitlement' => %i[org_id apikey plan usage],
+      'EntitlementApikey' => %i[id expires allowed_cidrs],
+      'EntitlementPlan' => %i[key tier],
+      'EntitlementUsage' => %i[requests quota hard_limit window_start window_end],
       'DatabaseList' => %i[databases],
       'Database' => %i[base name summary standing open license_type starts expires renews_at notice_due_at versions],
       'DatabaseVersion' => %i[id version summary formats],
@@ -228,6 +401,13 @@ module InternetData
       'Download' => %i[dataset_id format outcome sample open bytes http_status apikey_id client_ip user_agent created],
     }.freeze
 
+    # The detail objects, each `{}` under a false flag (the spec's `allOf`
+    # members), so an empty one is present and empty, while a populated one
+    # carries every member the spec requires of it. test/database_test.rb holds
+    # this to spec/openapi.yaml.
+    DETAILS = %w[ClassDetail ProxyDetail PubproxyDetail CarrierDetail SatelliteDetail SshDetail SmtpDetail
+                 DnsResolverDetail BitTorrentDetail DisposableDetail].freeze
+
     # RFC 3339's full-date, the spec's `date`, and its date-time, the spec's
     # `date-time`, its `T` and `Z` in either case, as RFC 3339 allows: through
     # 2.8.4 a lowercase one failed the call. Anything else reached the
@@ -237,13 +417,20 @@ module InternetData
     RFC3339_DATE = /\A(\d{4})-(\d{2})-(\d{2})\z/
     RFC3339_DATE_TIME = /\A(\d{4})-(\d{2})-(\d{2})[Tt](\d{2}):(\d{2}):(\d{2})(?:\.\d+)?(?:[Zz]|[+-](\d{2}):(\d{2}))\z/
 
-    private
+    # A date in the form its type names, on a day and at a time that exist: an
+    # hour of 24 rolls over the way a missing day does.
+    def self.date?(value, type)
+      m = (type == 'Date' ? RFC3339_DATE : RFC3339_DATE_TIME).match(value)
+      return false unless m && Date.valid_date?(m[1].to_i, m[2].to_i, m[3].to_i)
 
-    # True when `value` has the generated `type`, a model's members recursively;
-    # raises TypeError naming where it does not. No list entry or map value the
-    # spec describes may be null, and through 2.8.1 one came back as nil, or as 0
-    # in `size`.
-    def check_type!(value, type, where)
+      type == 'Date' || (m[4].to_i < 24 && m[5].to_i < 60 && m[6].to_i < 60 && m[7].to_i < 24 && m[8].to_i < 60)
+    end
+
+    # True when the parsed `value` has the generated `type`, a model's members
+    # recursively; raises TypeError naming where it does not. No list entry or
+    # map value the spec describes may be null: through 2.8.1 one came back as
+    # nil, or as 0 in `size`.
+    def self.check_type!(value, type, where)
       raise TypeError, "#{where} is null" if value.nil?
 
       typed =
@@ -265,7 +452,8 @@ module InternetData
         else
           model = InternetData.const_get(type)
           if model.respond_to?(:openapi_types)
-            value.is_a?(Hash) && model.openapi_types.all? { |attr, member| check_member!(model, attr, member, value, where) }
+            value.is_a?(Hash) && ((value.empty? && DETAILS.include?(type)) ||
+              model.openapi_types.all? { |attr, member| check_member!(model, attr, member, value, where) })
           else
             value.is_a?(String) # an enum
           end
@@ -275,24 +463,24 @@ module InternetData
       raise TypeError, "#{where} is not a #{type}"
     end
 
-    # A date in the form its type names, on a day and at a time that exist: an
-    # hour of 24 rolls over the way a missing day does.
-    def date?(value, type)
-      m = (type == 'Date' ? RFC3339_DATE : RFC3339_DATE_TIME).match(value)
-      return false unless m && Date.valid_date?(m[1].to_i, m[2].to_i, m[3].to_i)
-
-      type == 'Date' || (m[4].to_i < 24 && m[5].to_i < 60 && m[6].to_i < 60 && m[7].to_i < 24 && m[8].to_i < 60)
-    end
-
     # A member absent or null reads as absent, unless the spec requires it and
     # does not make it nullable.
-    def check_member!(model, attr, member, value, where)
-      key = model.attribute_map[attr]
+    def self.check_member!(model, attr, member, value, where)
+      key = model.attribute_map[attr].to_s
       return check_type!(value[key], member.to_s, "#{where}.#{key}") unless value[key].nil?
       return true unless REQUIRED.fetch(model.name.split('::').last).include?(attr)
       return true if model.openapi_nullable.include?(attr)
 
       raise TypeError, "#{where}.#{key} is #{value.key?(key) ? 'null' : 'missing'}"
+    end
+
+    private_class_method :check_member!
+
+    private
+
+    def lookup_get(path, timeout)
+      build_request(:GET, path, header_params: { 'Accept' => 'application/json' }, auth_names: LOOKUP_AUTH,
+                                timeout: timeout)
     end
   end
 end

@@ -5,7 +5,7 @@
 
 The official Ruby client library for the [InternetData](https://internetdata.io) API.
 
-InternetData publishes IP and ASN databases: geolocation, anonymity, ownership and network data, as gzipped CSV and as MMDB. This library lists the databases your organization is licensed for, tells you what is inside one before you fetch it, downloads it, and verifies the bytes you got.
+InternetData publishes IP and ASN databases: geolocation, anonymity, ownership and network data, as gzipped CSV and as MMDB. This library looks an IP address, an AS or a domain up in all of them at once, and downloads the databases your organization is licensed for.
 
 ## Getting Started
 
@@ -23,11 +23,136 @@ Requires Ruby 3.3 or newer.
 
 ## Usage
 
-Every database published today needs an API key carrying the `db.download` scope. The Open databases are licensed to every organization from the start and are free under [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/), and `list` marks them `open`. The rest are licensed by contract, one family at a time: if your organization doesn't have a license yet, [request an evaluation](https://internetdata.io/contact?purpose=evaluation&subject=Evaluation+license). `api_key:` is nevertheless optional - a client built without one sends no `Authorization` header at all, ready for a database served without a license.
+**No API key needed to start.** Unlimited, the free plan, answers an address's location, network, company, abuse contact and reverse DNS, and its Tor, relay, anycast, carrier, satellite, SSH, SMTP, web, DNS resolver and BitTorrent flags, with a key or without one, limited per address per minute.
 
 ```ruby
 require 'internetdata'
 
+client = InternetData::Client.new
+
+result = client.lookup('146.70.116.130')
+result.location['country']  # => "AT"
+result.asn['name']          # => "M247 Europe SRL"
+result.is_tor               # => false
+```
+
+### With an API key
+
+Every paid plan answers every field: the VPN, proxy, hosting and CDN flags as well, the detail behind each flag, and an address's city, Whois, RWHOIS and hosted domains. A free account tries every field, 100 lookups a day. Create a key in the [console](https://app.internetdata.io), then pass it in:
+
+```ruby
+client = InternetData::Client.new(api_key: ENV['INTERNETDATA_API_KEY'])
+
+result = client.lookup('146.70.116.130')
+result.is_vpn                # => true, on a paid plan
+result.vpn['provider_name']  # => "Mullvad", on a paid plan
+result.location['city']      # => "Vienna", on a paid plan
+```
+
+### AS and domain lookups
+
+```ruby
+asn = client.lookup_asn(9009)  # or 'AS9009'
+asn.name                       # => "M247 Europe SRL"
+asn.prefixes                   # what it announces, on a paid plan
+
+domain = client.lookup_domain('example.com')
+domain.is_registered           # => true
+domain.dns                     # its records, on a paid plan
+```
+
+Both are sent as you give them, and the API reads `AS9009` and an internationalized domain too. Neither is cached.
+
+### Your own address
+
+```ruby
+result = client.my_ip
+result.ip   # => the address we saw this call come from
+```
+
+Same answer `lookup` would give for that address, and the same cost against your allowance. It is deliberately not cached: which address you are is the whole question, and a machine that moves between networks would otherwise be told where it used to be.
+
+### Your plan and usage
+
+```ruby
+acct = client.my_entitlement
+acct.plan.key          # => "max"
+acct.usage.requests    # => 580
+acct.usage.window_end  # => when the allowance resets
+```
+
+Usage counts against the anniversary of your subscription on a paid plan, not the calendar month and not the billing period, and against the UTC day on the free plan; it is the same number a lookup is gated on. `hard_limit` is `nil` on an uncapped plan, which is not the same as zero.
+
+### Batch lookup
+
+Look up as many addresses as you like at once. Bogons and cached answers are handled locally, and everything else goes to the batch endpoint in chunks of up to 1000 addresses, in parallel. The batch endpoint needs a paid plan:
+
+```ruby
+results = client.lookup_batch(['146.70.116.130', '8.8.8.8', '1.1.1.1'])
+
+results.each do |ip, result|
+  if result.is_a?(InternetData::Error)
+    warn "#{ip}: #{result.message}"
+    next
+  end
+  puts "#{ip}: #{result.location['country']}"
+end
+```
+
+Results are keyed by address, in the order you first listed each one, so duplicates in your list collapse into a single entry and one address failing never loses the rest: it carries its error as its value, with the status the API would have given that address on its own.
+
+How many chunks are in flight at once, how many times a failed chunk is retried, and how long each chunk's request may take are configurable per call:
+
+```ruby
+results = client.lookup_batch(many_ips, concurrency: 4, retries: 4, timeout: 5)
+```
+
+### Caching
+
+Address lookups are cached by default, so repeat lookups of the same address are free:
+
+```ruby
+client = InternetData::Client.new
+
+result = client.lookup('146.70.116.130')   # API request
+result2 = client.lookup('146.70.116.130')  # no API request, result was cached
+```
+
+You can change the default cache variables (max size, TTL in seconds) on initialization, or even disable it:
+
+```ruby
+client = InternetData::Client.new(cache_max_size: 50_000, cache_ttl: 6 * 60 * 60)
+client_no_cache = InternetData::Client.new(cache: false)
+```
+
+### Private and reserved addresses
+
+Private, loopback, link-local, documentation and multicast addresses (and their IPv6 equivalents, including the 6to4 and Teredo ranges) are answered locally, so they cost no request and no quota. The answer is the one the API gives a bogon on a paid plan, every flag false, whatever your plan:
+
+```ruby
+result = client.lookup('192.168.1.1')
+result.is_bogon  # => true
+result.is_vpn    # => false
+```
+
+The check is available on the client, which is handy when your inputs are addresses anyway:
+
+```ruby
+client.bogon?('10.0.0.1')   # => true
+client.bogon?('8.8.8.8')    # => false
+```
+
+It is also on the module itself, if you want it without a client:
+
+```ruby
+InternetData.bogon?('10.0.0.1')   # => true
+```
+
+### Database downloads
+
+Every database published today needs an API key carrying the `db.download` scope. The Open databases are licensed to every organization from the start and are free under [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/), and `list` marks them `open`. The rest are licensed by contract, one family at a time: if your organization doesn't have a license yet, [request an evaluation](https://internetdata.io/contact?purpose=evaluation&subject=Evaluation+license).
+
+```ruby
 client = InternetData::Client.new(api_key: ENV['INTERNETDATA_API_KEY'])
 
 client.database.list.each do |database|
@@ -100,15 +225,16 @@ client.database.downloads(limit: 20).each do |attempt|
 end
 ```
 
-### Timeouts
+### Timeouts and retries
 
 ```ruby
-client = InternetData::Client.new(api_key: ENV['INTERNETDATA_API_KEY'], timeout: 10)
+client = InternetData::Client.new(timeout: 10, retries: 4)
 
+result = client.lookup('146.70.116.130', timeout: 2, retries: 0)
 catalog = client.database.list(timeout: 5)
 ```
 
-`timeout` is in seconds and bounds each attempt, body included, so a call that is retried can take longer in total. It defaults to 30 seconds, and 0 means no bound. The client's value is the default: from 2.1.0, `list`, `metadata`, `checksums`, `downloads` and `download_url` each take `timeout:` for that call alone. A negative value, anything that isn't a number, and anything past 2147483.647 seconds (the longest curl holds) raise `ArgumentError` where you pass them, before any request.
+`timeout` is in seconds and bounds each attempt, body included, so a call that is retried can take longer in total. It defaults to 30 seconds, and 0 means no bound. The client's values are defaults: `lookup`, `lookup_asn`, `lookup_domain`, `lookup_batch`, `my_ip` and `my_entitlement` each take `timeout:` and `retries:` for that call alone, and `list`, `metadata`, `checksums`, `downloads`, `download_url` and every `client.oauth` method take `timeout:`. A negative value, anything that isn't a number, and anything past 2147483.647 seconds (the longest curl holds) raise `ArgumentError` where you pass them, before any request. So does a `retries` that isn't an Integer from 0, and a `concurrency` that isn't an Integer from 1 given to `Client.new`, which `lookup_batch` refuses as `:bad_request`.
 
 `download` and `download_bytes` take no `timeout:` and raise `ArgumentError` if handed one, rather than accepting it and quietly doing nothing: a transfer runs to gigabytes and minutes, so any bound that suits a JSON call would abandon a healthy download. They bound only their connection with the client's value. `download_url` does take one, because minting the link is an ordinary API request - it bounds that request, not whatever you do with the link afterwards.
 
@@ -118,15 +244,15 @@ Failures raise an `InternetData::Error` carrying a `kind` and a `retryable?` fla
 
 ```ruby
 begin
-  client.database.download('vpn_ip_v1', 'mmdb', './vpn_ip_v1.mmdb')
+  client.lookup('146.70.116.130')
 rescue InternetData::Error => e
-  warn "#{e.kind} #{e.status} #{e.retryable?}: #{e.rc}"
+  warn "#{e.kind} #{e.status} #{e.retryable?}: #{e.message}"
 end
 ```
 
-`kind` is one of `:bad_request`, `:unauthorized`, `:forbidden`, `:rate_limited`, `:quota_exceeded`, `:server_error` or `:network`. `rc` is the API's own result code, such as `NOT_LICENSED` or `LICENSE_EXPIRED`, which is usually the specific thing you want to read.
+`kind` is one of `:bad_request`, `:unauthorized`, `:forbidden`, `:rate_limited`, `:quota_exceeded`, `:server_error` or `:network`. A lookup's `message` is the API's own words; a database call's refusal also carries `rc`, the API's result code, such as `NOT_LICENSED` or `LICENSE_EXPIRED`.
 
-`:rate_limited` is a 429 that carries `Retry-After`, and the library retries it for you, waiting as long as it says, or its own backoff from 250 ms when that's past about 24.8 days. `:quota_exceeded` is a 429 without one, which it never retries. InternetData's database API has no quota, so you won't see `:quota_exceeded` from it.
+Note that `:rate_limited` and `:quota_exceeded` both arrive as HTTP 429 and are not the same thing. A rate limit is when the API faces extreme traffic bursts and so retrying later works; but a spent quota needs your allowance raised or the window to roll over. The library retries rate limits for you, but not if your quota is exceeded. It waits the `Retry-After` the API sent, or its own backoff from 250 ms when that's past about 24.8 days.
 
 ### Sign in with OAuth (device flow)
 
@@ -172,6 +298,17 @@ registration = client.oauth.register(['http://127.0.0.1:8765/callback'], client_
 ```
 
 Each redirect URI must be https on a public host name, or http on a loopback address, which then matches any port. Nothing is kept until a person approves the client, so an app with no client ID saved can simply register again.
+
+### Absent is not false
+
+Unlimited leaves out the VPN, proxy, hosting and CDN flags and their detail, an address's city and the rest of its paid location, its Whois, RWHOIS and hosted domains, and the paid members inside each shared object, such as `abuse['phone']`. A free-plan key's answer carries `trial_expired`, true once its daily trial is spent. A field is present when your plan includes it and `nil` when it does not. `nil` means "not in your plan"; `false` means "we checked, and no".
+
+```ruby
+result.vpn?                   # false when absent, for when you only want the flag
+result.included?(:is_vpn)     # false on Unlimited: not in your plan
+result.location.key?('city')  # false on Unlimited
+result.trial_expired == true  # a free-plan key's daily trial is spent
+```
 
 ## Other Libraries
 

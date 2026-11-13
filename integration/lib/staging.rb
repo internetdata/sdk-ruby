@@ -11,7 +11,16 @@ require 'typhoeus'
 require 'internetdata'
 
 module Staging
-  BASE_URL = 'https://staging.internetdata.io'
+  # The API, and the apex its authorization server answers at. The database
+  # paths answer on both hosts, and a client from LOOKUPS_SINCE signs in at the
+  # apex of the API host it is given.
+  BASE_URL = 'https://api-staging.internetdata.io'
+  APEX_URL = 'https://staging.internetdata.io'
+  # Prod's API, which the keyless lookups are checked against beside staging's.
+  PROD_URL = 'https://api.internetdata.io'
+  # The release that brought the lookups and moved the default base URL to the
+  # API host.
+  LOOKUPS_SINCE = Gem::Version.new('2.10.0')
 
   # The credential is a read-only console key for one org, licensed to a couple
   # of the smallest published databases, so a run may download everything it is
@@ -59,8 +68,9 @@ module Staging
   #
   # Only derived facts leave here. An assertion that fails prints its operands,
   # and these logs are public, so a request is recorded as an origin and a path
-  # and the key itself is never held.
-  Fact = Struct.new(:origin, :path, :carried_key, keyword_init: true)
+  # and the key itself is never held. `ips` is what a POST /batch asked about,
+  # which is the test's own input.
+  Fact = Struct.new(:origin, :path, :carried_key, :ips, keyword_init: true)
 
   def facts
     @facts ||= begin
@@ -74,8 +84,17 @@ module Staging
   def note(request)
     uri = URI.parse(request.url)
     facts << Fact.new(origin: "#{uri.scheme}://#{uri.host}", path: uri.path,
-                      carried_key: carries_key?(request))
+                      carried_key: carries_key?(request), ips: batch_ips(request))
     true
+  end
+
+  def batch_ips(request)
+    body = request.options[:body]
+    return [] unless body.is_a?(String) && !body.empty?
+
+    JSON.parse(body).fetch('ips', [])
+  rescue JSON::ParserError
+    []
   end
 
   def carries_key?(request)
@@ -89,6 +108,11 @@ module Staging
   def client(**options)
     facts
     InternetData::Client.new(api_key: key, base_url: BASE_URL, **options)
+  end
+
+  # The CI key's plan and usage, read once a run: no lookup counts against it.
+  def entitlement
+    @entitlement ||= client.my_entitlement
   end
 
   # The families this org holds a live license for, which is what a download may

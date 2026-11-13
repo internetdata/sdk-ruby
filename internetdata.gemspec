@@ -9,8 +9,8 @@ Gem::Specification.new do |spec|
   spec.email = ['dev@internetdata.io']
 
   spec.summary = 'Official Ruby client library for the InternetData API.'
-  spec.description = 'Download InternetData IP and ASN databases, and read their metadata, ' \
-                     'checksums and download history.'
+  spec.description = 'Look up IP addresses, AS numbers and domains in the InternetData API, and download ' \
+                     'its IP and ASN databases with their metadata, checksums and download history.'
   spec.homepage = 'https://internetdata.io'
   spec.license = 'MIT'
   spec.required_ruby_version = '>= 3.3'
@@ -27,4 +27,5 @@ Gem::Specification.new do |spec|
   spec.require_paths = ['lib']
 
   spec.add_dependency 'typhoeus', '~> 1.4'
+  spec.add_dependency 'lru_redux', '~> 1.1'
 end

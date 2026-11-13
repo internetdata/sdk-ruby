@@ -11,8 +11,8 @@ class OauthTest < Minitest::Test
   # The one client ID the server holds, already public in the CLI's source.
   CLIENT_ID = 'internetdata-cli'
   SINCE = Gem::Version.new('2.3.0')
-  # The console's device page. The API is served at the apex here, so a page
-  # derived from the API host would be the landing page's, which a `/device`
+  # The console's device page. The authorization server is the apex here, so a
+  # page derived from its host would be the landing page's, which a `/device`
   # suffix check alone still passes.
   DEVICE_PAGE = 'https://app-staging.internetdata.io/device'
 
@@ -20,13 +20,16 @@ class OauthTest < Minitest::Test
     installed = Gem.loaded_specs['internetdata'].version
     skip "the oauth accessor arrived in #{SINCE}, and #{installed} is installed" if installed < SINCE
 
-    @oauth = InternetData::Client.new(base_url: Staging::BASE_URL).oauth
+    # From LOOKUPS_SINCE a client signs in at the apex of the API host it is
+    # given; before it, at its base URL as given.
+    base_url = installed >= Staging::LOOKUPS_SINCE ? Staging::BASE_URL : Staging::APEX_URL
+    @oauth = InternetData::Client.new(base_url: base_url).oauth
   end
 
   def test_metadata_names_the_host_it_was_asked_on
     metadata = @oauth.metadata
 
-    assert_equal Staging::BASE_URL, metadata.issuer
+    assert_equal Staging::APEX_URL, metadata.issuer
     refute_nil metadata.device_authorization_endpoint
     assert_includes metadata.code_challenge_methods_supported, 'S256'
   end

@@ -49,6 +49,16 @@ SELECT="${SELECT}:DatabaseFormat:Standing"
 # AuthorizationWireApi is public by accident and deprecated for exactly that, so
 # this gem never ships one. client.oauth builds its own requests.
 SELECT="${SELECT}:OauthMetadata:DeviceAuthorization:TokenResponse:ClientRegistration"
+# What the lookups read: each answer and every schema it reaches, which the
+# client checks a served answer against, the batch's entry error, and the
+# entitlement my_entitlement returns. The Lookup and Entitlement tags are not
+# selected: the client builds those requests itself, and a batch queues them.
+SELECT="${SELECT}:LookupResponse:ClassDetail:ProxyDetail:PubproxyDetail:CarrierDetail:SatelliteDetail"
+SELECT="${SELECT}:SshDetail:SmtpDetail:WebDetail:DnsResolverDetail:BitTorrentDetail:Location:Asn:Company"
+SELECT="${SELECT}:AbuseContact:Whois:Rwhois:HostedDomains:AsnLookupResponse:AsnPrefix:DomainLookupResponse"
+SELECT="${SELECT}:DomainDns:DnsAddressRecord:DnsMxRecord:DnsNsRecord:DnsCnameRecord:DomainIpRanges"
+SELECT="${SELECT}:DomainIpRange:DisposableDetail:BatchLookupError"
+SELECT="${SELECT}:Entitlement:EntitlementApikey:EntitlementPlan:EntitlementUsage"
 SELECT="${SELECT},supportingFiles,apiTests=false,modelTests=false,apiDocs=false,modelDocs=false"
 
 # The two `mslm:` members of TokenResponse would otherwise surface as

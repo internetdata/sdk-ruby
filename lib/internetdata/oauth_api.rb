@@ -135,7 +135,7 @@ module InternetData
       optional = { 'scope' => scope, 'state' => state, 'resource' => resource }.reject { |_, v| v.nil? || v.empty? }
       params = { 'response_type' => 'code', **required, 'code_challenge_method' => 'S256', **optional }
       query = params.map { |name, value| "#{name}=#{percent_encode(name, value)}" }.join('&')
-      "#{@transport.config.base_url}#{AUTHORIZE_PATH}?#{query}"
+      "#{@transport.oauth_base_url}#{AUTHORIZE_PATH}?#{query}"
     end
 
     # A fresh PKCE pair for one sign-in, from 32 bytes of SecureRandom.

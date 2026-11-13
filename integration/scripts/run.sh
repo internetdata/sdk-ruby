@@ -12,9 +12,10 @@
 #
 #   1. Nothing published satisfies the Gemfile's requirement. Before the first
 #      release there is no artifact to test.
-#   2. The staging key is missing. The database tests then skip from inside
-#      minitest, so the skip and its reason land in the test output rather than
-#      only here. The OAuth checks carry no key and run regardless.
+#   2. The staging key is missing. The database tests and the keyed lookups
+#      then skip from inside minitest, so the skip and its reason land in the
+#      test output rather than only here. The OAuth checks and the keyless
+#      lookups carry no key and run regardless.
 #
 # A THIRD condition is a failure rather than a skip: a Gemfile pointing at local
 # source. A suite run against the working tree passes every test and says
@@ -92,8 +93,8 @@ function satisfying() {
 
 function reportKey() {
     if [ -z "${INTERNETDATA_STAGING_KEY:-}" ] ; then
-        notice "INTERNETDATA_STAGING_KEY is not set, so every database assertion is skipped"
-        echo "==> no staging key: the database tests will skip"
+        notice "INTERNETDATA_STAGING_KEY is not set, so every keyed assertion is skipped"
+        echo "==> no staging key: the database tests and the keyed lookups will skip"
         return 0
     fi
     echo "==> staging key present"

@@ -3,43 +3,415 @@
 require 'typhoeus'
 
 module InternetData
-  DEFAULT_BASE_URL = 'https://internetdata.io'
+  DEFAULT_BASE_URL = 'https://api.internetdata.io'
+  DEFAULT_CACHE_MAX_SIZE = 10_000
+  DEFAULT_CACHE_TTL = 3600
+  DEFAULT_CONCURRENCY = 8
   DEFAULT_RETRIES = 2
   DEFAULT_TIMEOUT = 30
+  # The most addresses POST /batch takes in one call; a larger batch is sent in
+  # chunks of this size.
+  BATCH_MAX = 1000
 
   # A client for the InternetData API.
   #
-  # Every database published today needs an API key carrying the `db.download`
-  # scope, granted by contract one family at a time. The key is still OPTIONAL:
-  # a client built without one sends no `Authorization` header at all, which is
-  # what a database served without a license would need, and `oauth` needs none.
+  # The cache is per instance, so an answer is never shared between two clients
+  # holding different API keys and therefore entitled to different fields.
   class Client
-    # The licensed database downloads, and everything about them.
+    # The licensed database downloads, for keys that carry the `db.download` scope.
     attr_reader :database
     # Signing a person in with OAuth, which needs no API key at all.
     attr_reader :oauth
 
-    # @param api_key [String, nil] a key carrying the `db.download` scope. Omit
-    #   it and no credential is sent; every database published today answers 401.
-    #   The blanks around it are dropped, and blanks alone are no key.
+    # @param api_key [String, nil] without one a lookup is on Unlimited, the free
+    #   plan: an address's location, network, company, abuse contact, reverse
+    #   DNS and every flag but the paid ones, an AS's registration and a
+    #   domain's, limited per address per minute. A batch needs a key on a paid
+    #   plan, and the databases a key carrying the `db.download` scope. It is
+    #   trimmed, and a key of blanks alone is no key.
+    # @param base_url [String] the API; {#oauth} signs in at its apex, `api.`
+    #   dropped and `api-<env>.` becoming `<env>.`, and at any other URL as given.
+    # @param cache [Boolean] pass false to disable caching.
+    # @param cache_ttl [Numeric] how long an answer stays fresh, in seconds.
+    # @param concurrency [Integer] batch requests - chunks of up to 1000 addresses -
+    #   in flight during a batch, from 1.
     # @param retries [Integer] extra attempts for a transient failure, from 0. Each
     #   waits the server's `Retry-After` when it sent one of at most about 24.8
     #   days, and otherwise a backoff of 250 ms that doubles per retry.
-    # @param timeout [Numeric] seconds allowed for one API call, 0 for no bound. It
-    #   also bounds the CONNECT phase of a transfer, which is otherwise unlimited.
-    # @raise [ArgumentError] for a `timeout` that is negative, not a finite number,
-    #   or past 2147483.647 seconds (2**31 - 1 ms), the longest curl holds; for a
-    #   `retries` that is not an Integer from 0; and for an `api_key` holding a
-    #   control character, without the key in the message.
+    # @param timeout [Numeric] seconds one request may take before it is
+    #   abandoned, 0 for no bound. Applies per ATTEMPT, so a retried call may take
+    #   longer in total, and every call that takes `retries:` also takes
+    #   `timeout:` to override it. A database transfer bounds only its connect
+    #   phase with it.
+    # @raise [ArgumentError] for an `api_key` with a control character in it.
+    # @raise [ArgumentError] for a `timeout`, here or on any call, that is
+    #   negative, not a finite number, or past 2147483.647 seconds (2**31 - 1 ms),
+    #   the longest curl holds, for a `retries`, here or on any call, that is
+    #   not an Integer from 0, and for a `concurrency` that is not an Integer
+    #   from 1.
     # @param transport [Transport, nil] override the HTTP layer, mostly for tests.
-    def initialize(api_key: nil, base_url: DEFAULT_BASE_URL, retries: DEFAULT_RETRIES,
+    def initialize(api_key: nil, base_url: DEFAULT_BASE_URL, cache: true,
+                   cache_max_size: DEFAULT_CACHE_MAX_SIZE, cache_ttl: DEFAULT_CACHE_TTL,
+                   concurrency: DEFAULT_CONCURRENCY, retries: DEFAULT_RETRIES,
                    timeout: DEFAULT_TIMEOUT, transport: nil)
       retries = Retries.checked_count(retries)
+      unless concurrency?(concurrency)
+        raise ArgumentError, "concurrency must be an Integer from 1, not #{concurrency.inspect}"
+      end
       @transport = transport || Transport.new(
         Transport::Config.new(api_key: api_key, base_url: base_url, timeout: timeout),
       )
+      @cache = cache ? Cache.new(max_size: cache_max_size, ttl: cache_ttl) : nil
+      # The addresses with a request in flight, each a Flight its waiters block on.
+      @flights = {}
+      @flights_lock = Mutex.new
+      @concurrency = concurrency
+      @retries = retries
       @database = DatabaseApi.new(@transport, retries: retries)
       @oauth = OauthApi.new(@transport, retries: retries)
+    end
+
+    # Whether an address is private, loopback, link-local, documentation,
+    # multicast or otherwise not routable, including the IPv6 equivalents and
+    # the 6to4 and Teredo ranges.
+    #
+    # These are the addresses {#lookup} answers locally. Exposed here so the
+    # check is reachable from the client you already hold; the same predicate is
+    # also on the module itself, for code with no client to hand.
+    def bogon?(ip)
+      Bogon.bogon?(ip)
+    end
+
+    # What every database says about one address.
+    #
+    # A bogon is answered locally and never reaches the network. Everything else
+    # is served, then cached for this instance.
+    #
+    # @param retries [Integer, nil] extra attempts, for THIS call only.
+    # @param timeout [Numeric, nil] seconds each attempt may take, for THIS call only.
+    # @return [Result]
+    def lookup(ip, retries: nil, timeout: nil)
+      # Here as well as in the transport: a bogon or a cached answer returns before any request.
+      Transport.checked_timeout(timeout) unless timeout.nil?
+      Retries.checked_count(retries) unless retries.nil?
+      # Judged, cached and sent as the IPv4 address it carries, if it is mapped.
+      ip = Bogon.unmapped(ip)
+      return Bogon.result(ip) if Bogon.bogon?(ip)
+
+      loop do
+        hit = @cache&.get(ip)
+        return hit unless hit.nil?
+
+        flight, leader = board(ip)
+        return fetch(ip, retries, timeout) if flight.nil?
+
+        if leader
+          # Read once more now the address is boarded: a leader that landed
+          # between the miss above and boarding has already cached its answer.
+          hit = @cache.get(ip)
+          return unboard(ip, flight, :served, hit) unless hit.nil?
+
+          return lead(ip, flight) { fetch(ip, retries, timeout) }
+        end
+        state, value = flight.wait
+        return value if state == :served
+        raise value if state == :failed
+        # :abandoned - its leader never finished, so this caller asks again.
+      end
+    end
+
+    # What every database says about one AS. Sent as given, so `9009` and
+    # `"AS9009"` ask the same; one the API cannot read is a `:bad_request`. Not
+    # cached.
+    #
+    # @param retries [Integer, nil] extra attempts, for THIS call only.
+    # @param timeout [Numeric, nil] seconds each attempt may take, for THIS call only.
+    # @return [AsnResult]
+    def lookup_asn(asn, retries: nil, timeout: nil)
+      Retries.checked_count(retries) unless retries.nil?
+      Retries.with_retries(retries || @retries) do
+        Transport.asn_result(@transport.asn_request(asn, timeout: timeout).run)
+      end
+    end
+
+    # What every database says about one domain. Sent as given: the API reads it
+    # in any case and answers an internationalized name under its punycode
+    # spelling, and one it cannot read is a `:bad_request`. Not cached.
+    #
+    # @param retries [Integer, nil] extra attempts, for THIS call only.
+    # @param timeout [Numeric, nil] seconds each attempt may take, for THIS call only.
+    # @return [DomainResult]
+    def lookup_domain(domain, retries: nil, timeout: nil)
+      Retries.checked_count(retries) unless retries.nil?
+      Retries.with_retries(retries || @retries) do
+        Transport.domain_result(@transport.domain_request(domain, timeout: timeout).run)
+      end
+    end
+
+    # What every database says about the address this client is calling from.
+    #
+    # The same answer {#lookup} would give for that address, at the same cost
+    # against your allowance. The address is the one our edge observed, so a
+    # call made through a proxy or a VPN reports the exit it left through -
+    # usually the point of asking.
+    #
+    # Deliberately NOT cached. The cache is keyed by address, and which address
+    # this is IS the question: a machine that moves between networks would
+    # otherwise be told where it used to be.
+    #
+    # @return [Result]
+    def my_ip(retries: nil, timeout: nil)
+      Retries.checked_count(retries) unless retries.nil?
+      Retries.with_retries(retries || @retries) do
+        Transport.lookup_result(@transport.myip_request(timeout: timeout).run)
+      end
+    end
+
+    # What this client's key is entitled to, and how much of it has been used.
+    #
+    # Named for what it answers rather than `me`, which sits one letter from
+    # {#my_ip} and means something quite different: one is which address you are
+    # calling FROM, the other is what the key you are calling WITH may spend.
+    #
+    # Unlike a lookup there is no useful unauthenticated answer, so a client
+    # built without an API key gets an unauthorized error rather than a partial
+    # one.
+    #
+    # Usage counts against the ALLOWANCE WINDOW - on a paid plan the
+    # anniversary of the subscription, not the calendar month and not the
+    # billing period, and on the free plan the UTC day - and it is the same
+    # number a lookup is gated on. It can lag by a few seconds, because
+    # requests are counted in memory and flushed in aggregate.
+    #
+    # Deliberately NOT cached: the whole point is what has been spent, and a
+    # cached answer is a wrong one within seconds of the next request.
+    #
+    # @return [Entitlement]
+    def my_entitlement(retries: nil, timeout: nil)
+      Retries.checked_count(retries) unless retries.nil?
+      Retries.with_retries(retries || @retries) do
+        Transport.entitlement_result(@transport.entitlement_request(timeout: timeout).run)
+      end
+    end
+
+    # Look many addresses up in as few requests as possible.
+    #
+    # Bogons are answered locally and cached answers are reused; everything else
+    # goes to the batch endpoint in chunks of up to 1000 addresses, with at most
+    # `concurrency` chunks in flight. Keyed by address rather than positional, so
+    # duplicates in the input collapse to a single entry and the caller never has
+    # to line two lists up. An address that fails carries its error as its value,
+    # so one bad entry cannot lose the rest of the answers: the API reports a
+    # per-entry failure with the status the single lookup would have answered,
+    # and a chunk that fails as a whole marks every address in it. The batch
+    # endpoint needs a paid plan: without a key every address in a request of
+    # two or more carries an `:unauthorized` error, and a free-plan key's
+    # request of two or more a `:bad_request` (HTTP 402). A request of one
+    # address is answered as its lookup would be.
+    #
+    # @param concurrency [Integer, nil] chunks in flight, for THIS batch only.
+    #   Anything but an Integer from 1 is refused as `:bad_request` before any
+    #   request, and before a bogon or a cached answer is returned.
+    # @param retries [Integer, nil] extra attempts for a failed chunk, for THIS batch only.
+    # @param timeout [Numeric, nil] seconds each chunk's attempt may take, for THIS batch only.
+    # @return [Hash{String => Result, Error}] in the order the addresses were given
+    def lookup_batch(ips, concurrency: nil, retries: nil, timeout: nil)
+      limit = concurrency || @concurrency
+      unless concurrency?(limit)
+        raise Error.new(:bad_request, "concurrency must be an Integer from 1, not #{limit.inspect}")
+      end
+      Transport.checked_timeout(timeout) unless timeout.nil?
+      Retries.checked_count(retries) unless retries.nil?
+
+      # An IPv4-mapped address is sent as the address it carries, once however
+      # many of its spellings were asked, and answered under each one asked.
+      asked = ips.to_a.uniq
+      addresses = asked.map { |ip| Bogon.unmapped(ip) }.uniq
+      answers = {}
+      pending = []
+
+      addresses.each do |ip|
+        hit = Bogon.bogon?(ip) ? Bogon.result(ip) : @cache&.get(ip)
+        hit.nil? ? pending << ip : answers[ip] = hit
+      end
+      # Boarded before any chunk is built, so a lookup arriving meanwhile waits
+      # for this batch; an address already in flight is not sent again.
+      boarded = {}
+      joined = {}
+      pending.each do |ip|
+        flight, leader = board(ip)
+        if leader == false
+          joined[ip] = flight
+        else
+          boarded[ip] = flight
+        end
+      end
+      begin
+        unless boarded.empty?
+          chunks = boarded.keys.each_slice(BATCH_MAX).to_a
+          run_batch(chunks, answers, limit, retries || @retries, timeout, boarded)
+        end
+      ensure
+        boarded.each { |ip, flight| unboard(ip, flight, :abandoned) unless flight.nil? }
+      end
+      joined.each { |ip, flight| answers[ip] = joined_answer(ip, flight, retries, timeout) }
+
+      # Reinstated in input order: a hydra settles in completion order, and a
+      # caller iterating the hash should see what they passed in.
+      asked.to_h { |ip| [ip, answers[Bogon.unmapped(ip)]] }
+    end
+
+    private
+
+    # Whether `value` can be a batch's concurrency: chunks in flight are counted
+    # whole, and a hydra allowed fewer than one runs nothing.
+    def concurrency?(value)
+      value.is_a?(Integer) && value >= 1
+    end
+
+    # Concurrent misses for one address share ONE request. The first miss boards
+    # the address and every miss after it, a batch's included, waits on its
+    # Flight.
+    class Flight
+      def initialize
+        @lock = Mutex.new
+        @landed = ConditionVariable.new
+        @state = :pending
+      end
+
+      # Settles the flight once, for every waiter: :served with a Result,
+      # :failed with an Error, or :abandoned when its leader never finished.
+      def land(state, value = nil)
+        @lock.synchronize do
+          next unless @state == :pending
+
+          @state = state
+          @value = value
+          @landed.broadcast
+        end
+      end
+
+      # Blocks until the flight lands, then [state, value].
+      def wait
+        @lock.synchronize do
+          @landed.wait(@lock) while @state == :pending
+          [@state, @value]
+        end
+      end
+    end
+
+    # [flight, true] when this caller leads the request for `ip`, [flight,
+    # false] when one is already in flight, and nil without a cache: every
+    # lookup is then served, so nothing is shared.
+    def board(ip)
+      return nil if @cache.nil?
+
+      @flights_lock.synchronize do
+        existing = @flights[ip]
+        existing ? [existing, false] : [@flights[ip] = Flight.new, true]
+      end
+    end
+
+    # Takes `ip` off the board and lands its flight. Returns `value`.
+    def unboard(ip, flight, state, value = nil)
+      @flights_lock.synchronize { @flights.delete(ip) if @flights[ip].equal?(flight) }
+      flight.land(state, value)
+      value
+    end
+
+    # Runs the request a flight is waiting on, under the options of the call
+    # that leads it. A served answer is cached before it lands; a failure
+    # reaches every waiter and is cached for none; and a leader that never
+    # finishes - a killed thread, a Timeout.timeout - abandons the flight, so
+    # its waiters ask again rather than failing with it.
+    def lead(ip, flight)
+      unboard(ip, flight, :served, yield)
+    rescue Error => e
+      unboard(ip, flight, :failed, e)
+      raise
+    ensure
+      unboard(ip, flight, :abandoned)
+    end
+
+    def fetch(ip, retries, timeout)
+      result = Retries.with_retries(retries || @retries) do
+        Transport.lookup_result(@transport.lookup_request(ip, timeout: timeout).run)
+      end
+      @cache&.set(ip, result)
+      result
+    end
+
+    # One hydra per call, sized for THIS call. Reusing an instance-level hydra
+    # would silently cap a per-call concurrency at the client's setting, and
+    # would not be safe to drive from two threads either. Each request is one
+    # chunk of up to 1000 addresses.
+    def run_batch(chunks, answers, concurrency, retries, timeout, boarded)
+      hydra = Typhoeus::Hydra.new(max_concurrency: concurrency)
+      attempts = Hash.new(0)
+
+      enqueue = lambda do |chunk|
+        request = @transport.batch_request(chunk, timeout: timeout)
+        request.on_complete do |response|
+          outcome = settle(chunk, response, attempts, retries, enqueue)
+          outcome&.each do |ip, answer|
+            answers[ip] = answer
+            flight = boarded[ip]
+            unboard(ip, flight, answer.is_a?(Result) ? :served : :failed, answer) unless flight.nil?
+          end
+        end
+        hydra.queue(request)
+      end
+
+      chunks.each { |chunk| enqueue.call(chunk) }
+      hydra.run
+    end
+
+    # One POST /batch, mapped back onto the addresses it was asked about. A
+    # chunk-level failure - the call refused, the transport failing, the retries
+    # exhausted - becomes every address's error, exactly as it would have been
+    # had each been looked up alone.
+    def settle(chunk, response, attempts, retries, enqueue)
+      body = Transport.batch_body(response)
+      chunk.to_h do |ip|
+        answer = batch_answer(ip, body)
+        @cache&.set(ip, answer) if answer.is_a?(Result)
+        [ip, answer]
+      end
+    rescue Error => e
+      return chunk.to_h { |ip| [ip, e] } unless e.retryable? && attempts[chunk] < retries
+
+      attempts[chunk] += 1
+      # Sleeping here stalls the whole hydra, which is what a server-supplied
+      # delay asks for: it is telling every request to this host to back off.
+      sleep(Retries.delay_for(e, attempts[chunk]))
+      enqueue.call(chunk)
+      nil
+    end
+
+    # What a batch takes for an address another call was fetching: that call's
+    # answer or error, or, when its leader never finished, its own lookup.
+    def joined_answer(ip, flight, retries, timeout)
+      state, value = flight.wait
+      return value unless state == :abandoned
+
+      lookup(ip, retries: retries, timeout: timeout)
+    rescue Error => e
+      e
+    end
+
+    # Every address lands in exactly one of `results` and `errors`; an address in
+    # neither, or with an entry that is not an answer, is the server breaking its
+    # own contract, and is reported as that address's error rather than lost.
+    def batch_answer(ip, body)
+      served = body['results'][ip]
+      failed = body['errors'][ip]
+      if Transport.conforms?(served, 'LookupResponse')
+        Result.new(served)
+      elsif Transport.conforms?(failed, 'BatchLookupError')
+        Error.from_entry(failed['status'], failed['error'])
+      else
+        Error.new(:server_error, "the batch answer carried no readable entry for #{ip}", status: 200)
+      end
     end
   end
 end
