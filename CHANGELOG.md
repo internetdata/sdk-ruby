@@ -2,6 +2,12 @@
 
 What each release changed for you, newest first. Each line is a commit's summary, linked to its full description and diff. Releases before 2.3.2 are described by their release commits.
 
+## 2.9.2 - 2026-11-13
+
+### Fixes
+
+- End a device poll at its deadline with no request past it ([`6b51fd3`](https://github.com/internetdata/sdk-ruby/commit/6b51fd3482beac6418ae3337424bd8455777a326))
+
 ## 2.9.1 - 2026-11-09
 
 ### Fixes
