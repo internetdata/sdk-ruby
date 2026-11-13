@@ -2,6 +2,16 @@
 
 What each release changed for you, newest first. Each line is a commit's summary, linked to its full description and diff. Releases before 2.3.2 are described by their release commits.
 
+## 2.10.0 - 2026-11-13
+
+### Features
+
+- Look up an address, an AS or a domain on api.internetdata.io ([`0dd201c`](https://github.com/internetdata/sdk-ruby/commit/0dd201cae62bb89fc460194ffa1db269e0e9af62))
+
+### Fixes
+
+- Re-pin the spec to 2026.11.13: the lookup and entitlement operations ([`41ddc2c`](https://github.com/internetdata/sdk-ruby/commit/41ddc2c671a5293102686fbbd6d078cb6f1f7e1f))
+
 ## 2.9.2 - 2026-11-13
 
 ### Fixes
