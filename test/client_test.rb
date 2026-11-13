@@ -227,7 +227,8 @@ class ClientTest < Minitest::Test
 
       assert_equal :bad_request, error.kind, target.inspect
       refute error.retryable?, target.inspect
-      assert_match(/lookup_asn .*lookup_domain/, error.message, target.inspect)
+      assert_equal "'#{target}' is not an IP address: look up an AS with lookup_asn, and a domain with lookup_domain",
+                   error.message
     end
     assert_empty calls, 'nothing but an address was sent'
   end

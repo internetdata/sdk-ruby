@@ -101,7 +101,7 @@ module InternetData
       # The API answers an AS or a domain at this path too, as an answer this call
       # cannot read, so one is refused unsent rather than retried as unreadable.
       unless Bogon.address?(ip)
-        raise Error.new(:bad_request, "#{ip.inspect} is not an IP address: look an AS up with lookup_asn " \
+        raise Error.new(:bad_request, "'#{ip}' is not an IP address: look up an AS with lookup_asn, " \
                                       'and a domain with lookup_domain')
       end
       return Bogon.result(ip) if Bogon.bogon?(ip)
