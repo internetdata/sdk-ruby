@@ -2,6 +2,17 @@
 
 What each release changed for you, newest first. Each line is a commit's summary, linked to its full description and diff. Releases before 2.3.2 are described by their release commits.
 
+## 2.11.0 - 2026-11-14
+
+### Features
+
+- Add the framework middleware core ([`48c2631`](https://github.com/internetdata/sdk-ruby/commit/48c263187e1632a4dfef385f923650536c89218d))
+
+### Fixes
+
+- Resolve Rails at the top level, not inside our own namespace ([`b3a8b74`](https://github.com/internetdata/sdk-ruby/commit/b3a8b746aebe418242da33d08943761ea9dc6580))
+- Word the non-IP refusal as the other InternetData SDKs do ([`ebe69ff`](https://github.com/internetdata/sdk-ruby/commit/ebe69ffdd3eef8c9569c00e51e0d5e7f87a9c537))
+
 ## 2.10.1 - 2026-11-13
 
 ### Fixes
