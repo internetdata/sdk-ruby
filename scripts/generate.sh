@@ -86,6 +86,22 @@ docker run --rm \
 # lib/internetdata/version.rb, which are OURS, plus a gemspec, Gemfile, Rakefile,
 # README, rubocop config, travis and gitlab CI files and an rspec suite - all of
 # which would overwrite the repo if the output were unpacked over it.
+# The generator writes `defined?(Rails) ? Rails.logger : ...` into
+# configuration.rb, and that file lives inside `module InternetData` - so the
+# bare constant resolves to InternetData::Rails first, which EXISTS as soon as
+# the internetdata-rails gem is loaded. Re-applied here rather than by hand,
+# because a hand-fix to a generated file survives exactly until the next
+# regeneration.
+function patch_rails_constant() {
+    sed -i 's|defined?(Rails) ? Rails.logger|defined?(::Rails) ? ::Rails.logger|' \
+        .gen/lib/internetdata/configuration.rb
+    if ! grep -q 'defined?(::Rails) ? ::Rails.logger' .gen/lib/internetdata/configuration.rb ; then
+        echo "could not resolve Rails at the top level: configuration.rb changed shape" >&2
+        exit 1
+    fi
+}
+
+patch_rails_constant
 rm -rf lib/internetdata/{api,models} lib/internetdata/{api_client,api_error,api_model_base,configuration}.rb
 cp -R .gen/lib/internetdata/api lib/internetdata/api
 cp -R .gen/lib/internetdata/models lib/internetdata/models

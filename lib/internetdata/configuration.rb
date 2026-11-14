@@ -177,7 +177,7 @@ module InternetData
       @ignore_operation_servers = false
       @inject_format = false
       @force_ending_format = false
-      @logger = defined?(Rails) ? Rails.logger : Logger.new(STDOUT)
+      @logger = defined?(::Rails) ? ::Rails.logger : Logger.new(STDOUT)
 
       yield(self) if block_given?
     end
