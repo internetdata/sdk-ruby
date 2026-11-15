@@ -406,8 +406,9 @@ module InternetData
       @raw['rwhois']
     end
 
-    # How many domains IP Hosted Domains finds on the address, as
-    # `{'total' => n}`: a count, never the list. Paid plans and the trial.
+    # How many domains IP Hosted Domains finds on the address, and the 10 most
+    # popular, as `{'total' => n, 'domains' => [...]}`: `domains` is `[]` when
+    # none does. Paid plans and the trial.
     def hosted_domains
       @raw['hosted_domains']
     end

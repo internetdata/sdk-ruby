@@ -14,7 +14,7 @@ module InternetData
     }.freeze
 
     # A member's empty value, by the type the spec gives it.
-    EMPTY = { String: '', Integer: 0, Float: 0, Boolean: false }.freeze
+    EMPTY = { String: '', Integer: 0, Float: 0, Boolean: false, 'Array<String>': [] }.freeze
 
     module_function
 
@@ -64,7 +64,7 @@ module InternetData
     end
 
     def empty(model)
-      model.openapi_types.to_h { |attr, type| [model.attribute_map[attr].to_s, EMPTY.fetch(type)] }
+      model.openapi_types.to_h { |attr, type| [model.attribute_map[attr].to_s, EMPTY.fetch(type).dup] }
     end
 
     # Parsed on first use rather than at load: a consumer that never looks an
