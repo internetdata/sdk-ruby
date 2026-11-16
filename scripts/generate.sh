@@ -55,7 +55,7 @@ SELECT="${SELECT}:OauthMetadata:DeviceAuthorization:TokenResponse:ClientRegistra
 # selected: the client builds those requests itself, and a batch queues them.
 SELECT="${SELECT}:LookupResponse:ClassDetail:ProxyDetail:PubproxyDetail:CarrierDetail:SatelliteDetail"
 SELECT="${SELECT}:SshDetail:SmtpDetail:WebDetail:DnsResolverDetail:BitTorrentDetail:Location:Asn:Company"
-SELECT="${SELECT}:AbuseContact:Whois:Rwhois:HostedDomains:AsnLookupResponse:AsnPrefix:DomainLookupResponse"
+SELECT="${SELECT}:AbuseContact:Whois:Rwhois:HostedDomains:AsnLookupResponse:AsnPrefix:AsnHostedDomains:DomainLookupResponse"
 SELECT="${SELECT}:DomainDns:DnsAddressRecord:DnsMxRecord:DnsNsRecord:DnsCnameRecord:DomainIpRanges"
 SELECT="${SELECT}:DomainIpRange:DisposableDetail:BatchLookupError"
 SELECT="${SELECT}:Entitlement:EntitlementApikey:EntitlementPlan:EntitlementUsage"

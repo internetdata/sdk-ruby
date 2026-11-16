@@ -77,6 +77,7 @@ Same answer `lookup` would give for that address, and the same cost against your
 ```ruby
 acct = client.my_entitlement
 acct.plan.key          # => "max"
+acct.plan.name         # => "Max", the name to show
 acct.usage.requests    # => 580
 acct.usage.window_end  # => when the allowance resets
 ```

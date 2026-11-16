@@ -69,9 +69,9 @@ module InternetData
     #
     # Presigned, so it carries no credential of yours and can be handed to
     # anything that speaks HTTP. The URL is returned rather than the bytes so the
-    # caller decides how to transfer a file that routinely runs to gigabytes; the
-    # link authorizes the START of a transfer, so one already running is not
-    # interrupted when it lapses.
+    # caller decides how to transfer a file that routinely runs to gigabytes. The
+    # link only has to be valid when a transfer starts, so one already running
+    # isn't cut off when it lapses.
     #
     # @param build [String, nil] one build of the database, as a
     #   `database.updated` webhook names it (`20261105.0t53s5`), so the file is

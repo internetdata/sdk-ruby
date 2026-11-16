@@ -364,6 +364,11 @@ class ClientTest < Minitest::Test
                        'country' => 'RO', 'other_origins' => [] }],
     },
     'an allocated of null' => { 'allocated' => nil },
+    'a rank of "341"' => { 'rank' => '341' },
+    'a tier1 of "false"' => { 'tier1' => 'false' },
+    'upstreams of ["174"]' => { 'upstreams' => ['174'] },
+    'downstreams of [null]' => { 'downstreams' => [nil] },
+    'hosted_domains without total' => { 'hosted_domains' => { 'domains' => [] } },
   }.freeze
 
   DOMAIN_WRONG_TYPED = {
@@ -397,7 +402,9 @@ class ClientTest < Minitest::Test
       'requests of "1"' => ENTITLEMENT_BODY.merge('usage' => usage.merge('requests' => '1')),
       'a null CIDR' => ENTITLEMENT_BODY.merge('apikey' => apikey.merge('allowed_cidrs' => [nil])),
       'CIDRs of null' => ENTITLEMENT_BODY.merge('apikey' => apikey.merge('allowed_cidrs' => nil)),
-      'a tier of 3' => ENTITLEMENT_BODY.merge('plan' => { 'key' => 'max', 'tier' => 3 }),
+      'a tier of 3' => ENTITLEMENT_BODY.merge('plan' => { 'key' => 'max', 'name' => 'Max', 'tier' => 3 }),
+      'a plan name of 1' => ENTITLEMENT_BODY.merge('plan' => { 'key' => 'max', 'name' => 1, 'tier' => 'max' }),
+      'a plan without its name' => ENTITLEMENT_BODY.merge('plan' => { 'key' => 'max', 'tier' => 'max' }),
       'a window_start of "10:00"' => ENTITLEMENT_BODY.merge('usage' => usage.merge('window_start' => '10:00')),
       'a window_start with no zone' => ENTITLEMENT_BODY.merge('usage' => usage.merge('window_start' => '2026-09-04T07:00:00')),
     }.each { |name, body| answers["my_entitlement, #{name}"] = [-> { client.my_entitlement }, body] }
@@ -746,7 +753,7 @@ class ClientTest < Minitest::Test
       'expires' => nil,
       'allowed_cidrs' => [],
     },
-    'plan' => { 'key' => 'free', 'tier' => 'free' },
+    'plan' => { 'key' => 'free', 'name' => 'Unlimited', 'tier' => 'free' },
     'usage' => {
       'requests' => 21,
       'quota' => 100,
@@ -780,6 +787,7 @@ class ClientTest < Minitest::Test
 
     assert_equal 'free', ent.plan.key
     assert_equal 'free', ent.plan.tier
+    assert_equal 'Unlimited', ent.plan.name
     assert_equal 21, ent.usage.requests
     assert_equal 100, ent.usage.quota
     # Null means NEVER stop, which is not the same as a limit of zero.

@@ -7,7 +7,8 @@ module InternetData
   # reads as `nil`, never as 0 or an empty string: Unlimited answers the AS's
   # registration (`asn`, `name`, `country`, `registry`, `allocated`, `domain`),
   # and paid plans and the trial add the rest. `whois` and `prefixes` are the
-  # wire values with their original string keys.
+  # wire values with their original string keys, as are `hosted_domains` and
+  # the neighbor lists.
   class AsnResult
     include Answer
 
@@ -87,6 +88,60 @@ module InternetData
     # RPKI status. Paid plans and the trial.
     def prefixes
       @raw['prefixes']
+    end
+
+    # Its rank in ASN Extended by customer cone, 1 the largest; 0 for an AS
+    # seen in no AS path. Paid plans and the trial.
+    def rank
+      @raw['rank']
+    end
+
+    # Whether it is one of the transit-free networks at the top of the
+    # hierarchy. Paid plans and the trial.
+    def tier1
+      @raw['tier1']
+    end
+
+    # `tier1` with an absent member read as false.
+    def tier1?
+      @raw['tier1'] == true
+    end
+
+    # How many AS numbers it gets transit from. Paid plans and the trial.
+    def num_upstreams
+      @raw['num_upstreams']
+    end
+
+    # Those AS numbers, ascending, up to 20000. Paid plans and the trial.
+    def upstreams
+      @raw['upstreams']
+    end
+
+    # How many AS numbers it exchanges its own and its customers' routes with.
+    # Paid plans and the trial.
+    def num_peers
+      @raw['num_peers']
+    end
+
+    # Those AS numbers, ascending, up to 20000. Paid plans and the trial.
+    def peers
+      @raw['peers']
+    end
+
+    # How many AS numbers it provides transit to. Paid plans and the trial.
+    def num_downstreams
+      @raw['num_downstreams']
+    end
+
+    # Those AS numbers, ascending, up to 20000. Paid plans and the trial.
+    def downstreams
+      @raw['downstreams']
+    end
+
+    # How many registered domains it hosts (`total`) and the 10 most popular
+    # (`domains`), with the wire's string keys. Paid plans and the trial.
+    def hosted_domains
+      @raw['hosted_domains']
     end
 
     # On answers to a key on the free plan only: false while its organization's
