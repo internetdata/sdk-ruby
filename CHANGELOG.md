@@ -2,6 +2,12 @@
 
 What each release changed for you, newest first. Each line is a commit's summary, linked to its full description and diff. Releases before 2.3.2 are described by their release commits.
 
+## 2.13.0 - 2026-11-16
+
+### Features
+
+- Read an AS's rank, neighbors and hosted domains, and the plan's name ([`81a3e58`](https://github.com/internetdata/sdk-ruby/commit/81a3e58c8e47148be336e509497296b8f46c0014))
+
 ## 2.12.0 - 2026-11-15
 
 ### Features
