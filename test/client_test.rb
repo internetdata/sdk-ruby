@@ -339,6 +339,7 @@ class ClientTest < Minitest::Test
   WRONG_TYPED = {
     'a flag of "yes"' => { 'is_tor' => 'yes' },
     'a flag of 1' => { 'is_vpn' => 1 },
+    'a cap_reached of "true"' => { 'cap_reached' => 'true' },
     'is_bogon of null' => { 'is_bogon' => nil },
     'a detail of "x"' => { 'vpn' => 'x' },
     'a numeric string in a detail' => {
@@ -366,6 +367,7 @@ class ClientTest < Minitest::Test
     'an allocated of null' => { 'allocated' => nil },
     'a rank of "341"' => { 'rank' => '341' },
     'a tier1 of "false"' => { 'tier1' => 'false' },
+    'a cap_reached of 1' => { 'cap_reached' => 1 },
     'upstreams of ["174"]' => { 'upstreams' => ['174'] },
     'downstreams of [null]' => { 'downstreams' => [nil] },
     'hosted_domains without total' => { 'hosted_domains' => { 'domains' => [] } },
@@ -373,6 +375,7 @@ class ClientTest < Minitest::Test
 
   DOMAIN_WRONG_TYPED = {
     'is_registered of "yes"' => { 'is_registered' => 'yes' },
+    'a cap_reached of "false"' => { 'cap_reached' => 'false' },
     'a null A record' => { 'dns' => { 'a' => [nil], 'aaaa' => [], 'mx' => [], 'ns' => [], 'cname' => [] } },
     'an IP range without its country' => {
       'ip_ranges' => { 'domain' => 'example.com', 'redirects_to' => '', 'total' => 1, 'ipv4' => 256,

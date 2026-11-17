@@ -425,6 +425,18 @@ module InternetData
       @raw['trial_expired'] == true
     end
 
+    # On answers to a key on a paid plan only: false while the answer has every
+    # field, true once its organization's overage cap is reached and the answer
+    # has Unlimited's, which is not billed; nil on any other answer.
+    def cap_reached
+      @raw['cap_reached']
+    end
+
+    # `cap_reached` with an absent member read as false.
+    def cap_reached?
+      @raw['cap_reached'] == true
+    end
+
     def inspect
       "#<#{self.class} ip=#{ip.inspect} is_bogon=#{is_bogon.inspect} is_vpn=#{is_vpn.inspect}>"
     end

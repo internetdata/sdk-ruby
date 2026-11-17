@@ -253,7 +253,7 @@ end
 
 `kind` is one of `:bad_request`, `:unauthorized`, `:forbidden`, `:rate_limited`, `:quota_exceeded`, `:server_error` or `:network`. A lookup's `message` is the API's own words; a database call's refusal also carries `rc`, the API's result code, such as `NOT_LICENSED` or `LICENSE_EXPIRED`.
 
-Note that `:rate_limited` and `:quota_exceeded` both arrive as HTTP 429 and are not the same thing. A rate limit is when the API faces extreme traffic bursts and so retrying later works; but a spent quota needs your allowance raised or the window to roll over. The library retries rate limits for you, but not if your quota is exceeded. It waits the `Retry-After` the API sent, or its own backoff from 250 ms when that's past about 24.8 days.
+Note that `:rate_limited` and `:quota_exceeded` both arrive as HTTP 429 and are not the same thing. A rate limit is when the API faces extreme traffic bursts and so retrying later works; but a 429 without `Retry-After` is `:quota_exceeded`, which the library never retries. The API itself always sends `Retry-After` with a 429, so that one comes from something in between, such as a proxy; a paid key past its overage cap gets `cap_reached` instead. It waits the `Retry-After` the API sent, or its own backoff from 250 ms when that's past about 24.8 days.
 
 ### Sign in with OAuth (device flow)
 
@@ -302,13 +302,14 @@ Each redirect URI must be https on a public host name, or http on a loopback add
 
 ### Absent is not false
 
-Unlimited leaves out the VPN, proxy, hosting and CDN flags and their detail, an address's city and the rest of its paid location, its Whois, RWHOIS and hosted domains, and the paid members inside each shared object, such as `abuse['phone']`. A free-plan key's answer carries `trial_expired`, true once its daily trial is spent. A field is present when your plan includes it and `nil` when it does not. `nil` means "not in your plan"; `false` means "we checked, and no".
+Unlimited leaves out the VPN, proxy, hosting and CDN flags and their detail, an address's city and the rest of its paid location, its Whois, RWHOIS and hosted domains, and the paid members inside each shared object, such as `abuse['phone']`. A free-plan key's answer carries `trial_expired`, true once its daily trial is spent. A paid key's carries `cap_reached`, true once its organization's overage cap is reached, when the answer has Unlimited's fields and isn't billed. A field is present when your plan includes it and `nil` when it does not. `nil` means "not in your plan"; `false` means "we checked, and no".
 
 ```ruby
 result.vpn?                   # false when absent, for when you only want the flag
 result.included?(:is_vpn)     # false on Unlimited: not in your plan
 result.location.key?('city')  # false on Unlimited
 result.trial_expired == true  # a free-plan key's daily trial is spent
+result.cap_reached == true    # a paid key is past its overage cap
 ```
 
 ## Other Libraries
