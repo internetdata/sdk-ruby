@@ -23,7 +23,7 @@ Requires Ruby 3.3 or newer, and libcurl at runtime, which the `curl` package bri
 
 ## Usage
 
-**No API key needed to start.** Unlimited, the free plan, answers an address's location, network, company, abuse contact and reverse DNS, and its Tor, relay, anycast, carrier, satellite, SSH, SMTP, web, DNS resolver and BitTorrent flags, with a key or without one, limited per address per minute.
+**No API key needed to start.** Unlimited, the free plan, answers an address's location, network, company, abuse contact and reverse DNS, and its Tor, relay, anycast, carrier, satellite, SSH, SMTP, web, DNS resolver and BitTorrent flags, with no daily or monthly cap, with a key or without one.
 
 ```ruby
 require 'internetdata'
