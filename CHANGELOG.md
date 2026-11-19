@@ -2,6 +2,13 @@
 
 What each release changed for you, newest first. Each line is a commit's summary, linked to its full description and diff. Releases before 2.3.2 are described by their release commits.
 
+## 2.14.2 - 2026-11-19
+
+### Fixes
+
+- README: the gem needs libcurl at runtime ([`95f0fad`](https://github.com/internetdata/sdk-ruby/commit/95f0fadb158af079f796ce9f80213409ee8c4be2))
+- Cache a spent trial's or a reached cap's answer for a minute at most ([`682a9e9`](https://github.com/internetdata/sdk-ruby/commit/682a9e93bcdf59109e84a1337c8b9840d875fa88))
+
 ## 2.14.1 - 2026-11-18
 
 ### Fixes
