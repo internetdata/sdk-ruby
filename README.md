@@ -5,7 +5,7 @@
 
 The official Ruby client library for the [InternetData](https://internetdata.io) API.
 
-InternetData publishes IP and ASN databases: geolocation, anonymity, ownership and network data, as gzipped CSV and as MMDB. This library looks an IP address, an AS or a domain up in all of them at once, and downloads the databases your organization is licensed for.
+It tells you what every InternetData database says about an IP address, an AS or a domain: where it is, who runs it, whether it is a VPN, proxy, Tor node or hosting server, and what it serves. It also downloads the databases your organization is licensed for.
 
 ## Getting Started
 
@@ -270,7 +270,7 @@ raise 'no API key was picked' if token.apikey.nil?
 keyed = InternetData::Client.new(api_key: token.apikey)
 ```
 
-`poll_device_token` raises `InternetData::OauthAccessDeniedError` when the person refuses and `InternetData::OauthExpiredTokenError` when the code expires first. Client IDs are issued on request from support@internetdata.io, and `client.oauth.revoke('your-client-id', token.refresh_token)` signs the machine out.
+`poll_device_token` raises `InternetData::OauthAccessDeniedError` when the person refuses and `InternetData::OauthExpiredTokenError` when the code expires first. `client.oauth.revoke('your-client-id', token.refresh_token)` signs the machine out. Only a client we registered, such as our CLI, can use the device flow: an app of your own signs people in with the authorization code flow below.
 
 ### Sign in with OAuth (authorization code)
 
