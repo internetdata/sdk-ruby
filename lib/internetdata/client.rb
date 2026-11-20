@@ -26,7 +26,7 @@ module InternetData
     # @param api_key [String, nil] without one a lookup is on Unlimited, the free
     #   plan: an address's location, network, company, abuse contact, reverse
     #   DNS and every flag but the paid ones, an AS's registration and a
-    #   domain's, limited per address per minute. A batch needs a key on a paid
+    #   domain's, with no daily or monthly cap. A batch needs a key on a paid
     #   plan, and the databases a key carrying the `db.download` scope. It is
     #   trimmed, and a key of blanks alone is no key.
     # @param base_url [String] the API; {#oauth} signs in at its apex, `api.`
@@ -187,7 +187,7 @@ module InternetData
     #
     # Usage counts against the ALLOWANCE WINDOW - on a paid plan the
     # anniversary of the subscription, not the calendar month and not the
-    # billing period, and on the free plan the UTC day - and it is the same
+    # billing period, and on the free plan its trial - and it is the same
     # number a lookup is gated on. It can lag by a few seconds, because
     # requests are counted in memory and flushed in aggregate.
     #

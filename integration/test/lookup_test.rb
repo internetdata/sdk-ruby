@@ -111,8 +111,8 @@ class LookupTest < Minitest::Test
     keyless_fields = keyless(Staging::BASE_URL).lookup(PROBE).raw.keys
 
     (keyless_fields - keyed.keys).each { |field| flunk "the CI key's answer drops #{field}" }
-    # A free-plan key's first 100 lookups of the UTC day are answered in full,
-    # and the rest as Unlimited's: which half a run sees depends on the day.
+    # A free-plan key's trial is answered in full, and the rest as
+    # Unlimited's: which half a run sees depends on the trial.
     if keyed.key?('trial_expired')
       assert_equal !keyed['trial_expired'], keyed.key?('is_vpn'), 'trial_expired says which answer this is'
     end

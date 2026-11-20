@@ -107,7 +107,7 @@ module InternetData
     end
 
     # On answers to a key on the free plan only: false while its organization's
-    # daily trial lasts, true once the answer has Unlimited's; nil on any other.
+    # trial of every field lasts, true once the answer has Unlimited's; nil on any other.
     def trial_expired
       @raw['trial_expired']
     end
