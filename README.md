@@ -38,7 +38,7 @@ result.is_tor               # => false
 
 ### With an API key
 
-Every paid plan answers every field: the VPN, proxy, hosting and CDN flags as well, the detail behind each flag, and an address's city, Whois, RWHOIS and hosted domains. A free account tries every field, 100 lookups a day. Create a key in the [console](https://app.internetdata.io), then pass it in:
+Every paid plan answers every field: the VPN, proxy, hosting and CDN flags as well, the detail behind each flag, and an address's city, Whois, RWHOIS and hosted domains. A free account tries every field. Create a key in the [console](https://app.internetdata.io), then pass it in:
 
 ```ruby
 client = InternetData::Client.new(api_key: ENV['INTERNETDATA_API_KEY'])
@@ -302,13 +302,13 @@ Each redirect URI must be https on a public host name, or http on a loopback add
 
 ### Absent is not false
 
-Unlimited leaves out the VPN, proxy, hosting and CDN flags and their detail, an address's city and the rest of its paid location, its Whois, RWHOIS and hosted domains, and the paid members inside each shared object, such as `abuse['phone']`. A free-plan key's answer carries `trial_expired`, true once its daily trial is spent. A paid key's carries `cap_reached`, true once its organization's overage cap is reached, when the answer has Unlimited's fields and isn't billed. A field is present when your plan includes it and `nil` when it does not. `nil` means "not in your plan"; `false` means "we checked, and no".
+Unlimited leaves out the VPN, proxy, hosting and CDN flags and their detail, an address's city and the rest of its paid location, its Whois, RWHOIS and hosted domains, and the paid members inside each shared object, such as `abuse['phone']`. A free-plan key's answer carries `trial_expired`, true once its trial is spent. A paid key's carries `cap_reached`, true once its organization's overage cap is reached, when the answer has Unlimited's fields and isn't billed. A field is present when your plan includes it and `nil` when it does not. `nil` means "not in your plan"; `false` means "we checked, and no".
 
 ```ruby
 result.vpn?                   # false when absent, for when you only want the flag
 result.included?(:is_vpn)     # false on Unlimited: not in your plan
 result.location.key?('city')  # false on Unlimited
-result.trial_expired == true  # a free-plan key's daily trial is spent
+result.trial_expired == true  # a free-plan key's trial is spent
 result.cap_reached == true    # a paid key is past its overage cap
 ```
 
