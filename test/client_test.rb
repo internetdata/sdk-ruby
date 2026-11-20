@@ -382,6 +382,20 @@ class ClientTest < Minitest::Test
                        'ranges' => [{ 'range' => '192.0.2.0/24', 'name' => 'EXAMPLE-NET' }] },
     },
     'has_mx missing' => { 'has_mx' => nil },
+    'a hosting entry without its asn' => { 'hosting' => [{ 'ip' => '192.0.2.10' }] },
+    'a hosting asn of "64496"' => { 'hosting' => [{ 'ip' => '192.0.2.10', 'asn' => '64496' }] },
+    'hosting of [null]' => { 'hosting' => [nil] },
+    'a cohosted total of "3"' => { 'cohosted_domains' => { 'ip' => '192.0.2.10', 'total' => '3', 'domains' => [] } },
+    'cohosted domains of null' => { 'cohosted_domains' => { 'ip' => '192.0.2.10', 'total' => 3, 'domains' => nil } },
+    'a web without links' => {
+      'web' => { 'url' => 'https://example.com/', 'title' => '', 'description' => '', 'last_seen' => '2026-11-18' },
+    },
+    'a web last_seen of 20261118' => {
+      'web' => { 'url' => 'https://example.com/', 'title' => '', 'description' => '', 'last_seen' => 20_261_118,
+                 'links' => { 'total' => 0, 'hosts' => [] } },
+    },
+    'redirects of [1]' => { 'redirects' => { 'total' => 1, 'domains' => [1] } },
+    'backlinks without total' => { 'backlinks' => { 'domains' => [] } },
   }.freeze
 
   # A member of the wrong type, or a null or an absence the spec does not allow,

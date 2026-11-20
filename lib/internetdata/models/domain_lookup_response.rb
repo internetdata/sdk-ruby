@@ -42,10 +42,21 @@ module InternetData
 
     attr_accessor :dns
 
+    # The network announcing each address in `dns.a` and then `dns.aaaa`, from IP ASN; `[]` where it resolves to none. Paid plans and the trial.
+    attr_accessor :hosting
+
+    attr_accessor :cohosted_domains
+
     attr_accessor :ip_ranges
 
     # `{}` when `is_disposable` is false. Paid plans and the trial.
     attr_accessor :disposable
+
+    attr_accessor :web
+
+    attr_accessor :redirects
+
+    attr_accessor :backlinks
 
     # On every answer to a key on the free plan, and on no other: `false` while its organization's trial of every field lasts, `true` once the answer has Unlimited's fields.
     attr_accessor :trial_expired
@@ -65,8 +76,13 @@ module InternetData
         :'has_ns' => :'has_ns',
         :'has_cname' => :'has_cname',
         :'dns' => :'dns',
+        :'hosting' => :'hosting',
+        :'cohosted_domains' => :'cohosted_domains',
         :'ip_ranges' => :'ip_ranges',
         :'disposable' => :'disposable',
+        :'web' => :'web',
+        :'redirects' => :'redirects',
+        :'backlinks' => :'backlinks',
         :'trial_expired' => :'trial_expired',
         :'cap_reached' => :'cap_reached'
       }
@@ -94,8 +110,13 @@ module InternetData
         :'has_ns' => :'Boolean',
         :'has_cname' => :'Boolean',
         :'dns' => :'DomainDns',
+        :'hosting' => :'Array<DomainHost>',
+        :'cohosted_domains' => :'CohostedDomains',
         :'ip_ranges' => :'DomainIpRanges',
         :'disposable' => :'DisposableDetail',
+        :'web' => :'DomainWeb',
+        :'redirects' => :'DomainRedirects',
+        :'backlinks' => :'DomainBacklinks',
         :'trial_expired' => :'Boolean',
         :'cap_reached' => :'Boolean'
       }
@@ -173,12 +194,34 @@ module InternetData
         self.dns = attributes[:'dns']
       end
 
+      if attributes.key?(:'hosting')
+        if (value = attributes[:'hosting']).is_a?(Array)
+          self.hosting = value
+        end
+      end
+
+      if attributes.key?(:'cohosted_domains')
+        self.cohosted_domains = attributes[:'cohosted_domains']
+      end
+
       if attributes.key?(:'ip_ranges')
         self.ip_ranges = attributes[:'ip_ranges']
       end
 
       if attributes.key?(:'disposable')
         self.disposable = attributes[:'disposable']
+      end
+
+      if attributes.key?(:'web')
+        self.web = attributes[:'web']
+      end
+
+      if attributes.key?(:'redirects')
+        self.redirects = attributes[:'redirects']
+      end
+
+      if attributes.key?(:'backlinks')
+        self.backlinks = attributes[:'backlinks']
       end
 
       if attributes.key?(:'trial_expired')
@@ -324,8 +367,13 @@ module InternetData
           has_ns == o.has_ns &&
           has_cname == o.has_cname &&
           dns == o.dns &&
+          hosting == o.hosting &&
+          cohosted_domains == o.cohosted_domains &&
           ip_ranges == o.ip_ranges &&
           disposable == o.disposable &&
+          web == o.web &&
+          redirects == o.redirects &&
+          backlinks == o.backlinks &&
           trial_expired == o.trial_expired &&
           cap_reached == o.cap_reached
     end
@@ -339,7 +387,7 @@ module InternetData
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [domain, is_registered, is_disposable, has_a, has_aaaa, has_mx, has_ns, has_cname, dns, ip_ranges, disposable, trial_expired, cap_reached].hash
+      [domain, is_registered, is_disposable, has_a, has_aaaa, has_mx, has_ns, has_cname, dns, hosting, cohosted_domains, ip_ranges, disposable, web, redirects, backlinks, trial_expired, cap_reached].hash
     end
 
     # Builds the object from hash

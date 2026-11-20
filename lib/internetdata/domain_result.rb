@@ -6,7 +6,9 @@ module InternetData
   # As with {Result}, an absent member is one your plan does not include, and
   # reads as `nil`, never as false: Unlimited answers whether the domain is
   # registered and which record types it has, and paid plans and the trial add
-  # the records themselves, its organization's IP ranges and Disposable Domain.
+  # the records themselves, the network announcing each address, the other
+  # domains on its first IPv4 address, its organization's IP ranges, Disposable
+  # Domain, its home page and the domains redirecting or linking to it.
   # Each flag has the three readers {Result}'s have: `is_disposable`,
   # `disposable?` and `included?(:is_disposable)`.
   class DomainResult
@@ -94,6 +96,20 @@ module InternetData
       @raw['dns']
     end
 
+    # The network announcing each address in `dns.a` and then `dns.aaaa`, from
+    # IP ASN, as wire hashes (`result.hosting.first['asn']['name']`); `[]` where
+    # it resolves to none. Paid plans and the trial.
+    def hosting
+      @raw['hosting']
+    end
+
+    # From IP Hosted Domains, as a wire hash: the other registered domains on
+    # its first IPv4 address (`ip`), how many (`total`) and up to 10, the most
+    # popular first (`domains`). Paid plans and the trial.
+    def cohosted_domains
+      @raw['cohosted_domains']
+    end
+
     # Its organization's IP ranges, from Domain IP Ranges. Paid plans and the
     # trial.
     def ip_ranges
@@ -104,6 +120,27 @@ module InternetData
     # trial.
     def disposable
       @raw['disposable']
+    end
+
+    # What our crawl last read of its home page, as a wire hash: `url`,
+    # `title`, `description`, `last_seen` and the external hosts it links to
+    # (`links`), each empty where it holds none. Paid plans and the trial.
+    def web
+      @raw['web']
+    end
+
+    # The registered domains whose home page redirects to it, as a wire hash:
+    # how many (`total`) and up to 10, the most popular first (`domains`). Paid
+    # plans and the trial.
+    def redirects
+      @raw['redirects']
+    end
+
+    # The registered domains whose home page links to it, as a wire hash: how
+    # many (`total`) and up to 10, the most popular first (`domains`). Paid
+    # plans and the trial.
+    def backlinks
+      @raw['backlinks']
     end
 
     # On answers to a key on the free plan only: false while its organization's
