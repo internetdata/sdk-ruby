@@ -2,6 +2,12 @@
 
 What each release changed for you, newest first. Each line is a commit's summary, linked to its full description and diff. Releases before 2.3.2 are described by their release commits.
 
+## 2.15.0 - 2026-11-20
+
+### Features
+
+- Read a paid domain answer's hosting, co-hosted domains, home page, redirects and backlinks ([`ae62593`](https://github.com/internetdata/sdk-ruby/commit/ae625934d2b3a37b032b2543629802c8a63837de))
+
 ## 2.14.3 - 2026-11-20
 
 ### Fixes
