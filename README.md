@@ -23,7 +23,7 @@ Requires Ruby 3.3 or newer, and libcurl at runtime, which the `curl` package bri
 
 ## Usage
 
-**No API key needed to start.** Unlimited, the free plan, answers an address's location, network, company, abuse contact and reverse DNS, and its Tor, relay, anycast, carrier, satellite, SSH, SMTP, web, DNS resolver and BitTorrent flags, with no daily or monthly cap, with a key or without one.
+**No API key needed to start.** Unlimited, the free plan, answers an address's location, network, company, abuse contact and reverse DNS, and its Tor, relay, bot, anycast, carrier, satellite, SSH, SMTP, web, DNS resolver and BitTorrent flags, with no daily or monthly cap, with a key or without one.
 
 ```ruby
 require 'internetdata'
@@ -302,7 +302,7 @@ Each redirect URI must be https on a public host name, or http on a loopback add
 
 ### Absent is not false
 
-Unlimited leaves out the VPN, proxy, hosting and CDN flags and their detail, an address's city and the rest of its paid location, its Whois, RWHOIS and hosted domains, and the paid members inside each shared object, such as `abuse['phone']`. A free-plan key's answer carries `trial_expired`, true once its trial is spent. A paid key's carries `cap_reached`, true once its organization's overage cap is reached, when the answer has Unlimited's fields and isn't billed. A field is present when your plan includes it and `nil` when it does not. `nil` means "not in your plan"; `false` means "we checked, and no".
+Unlimited leaves out the VPN, proxy, hosting and CDN flags and their detail, `bot`, which names the bot behind `is_bot`, an address's city and the rest of its paid location, its Whois, RWHOIS and hosted domains, and the paid members inside each shared object, such as `abuse['phone']`. A free-plan key's answer carries `trial_expired`, true once its trial is spent. A paid key's carries `cap_reached`, true once its organization's overage cap is reached, when the answer has Unlimited's fields and isn't billed. A field is present when your plan includes it and `nil` when it does not. `nil` means "not in your plan"; `false` means "we checked, and no".
 
 ```ruby
 result.vpn?                   # false when absent, for when you only want the flag

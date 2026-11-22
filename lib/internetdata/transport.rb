@@ -357,8 +357,9 @@ module InternetData
     # is `{}` under a false flag. test/database_test.rb holds this to
     # spec/openapi.yaml.
     REQUIRED = {
-      'LookupResponse' => %i[ip is_bogon is_tor is_relay is_anycast is_carrier is_satellite is_ssh is_smtp
-                             is_web is_dns_resolver is_bittorrent tor relay location asn company hostname abuse],
+      'LookupResponse' => %i[ip is_bogon is_tor is_relay is_bot is_anycast is_carrier is_satellite is_ssh
+                             is_smtp is_web is_dns_resolver is_bittorrent tor relay location asn company hostname
+                             abuse],
       'ClassDetail' => [],
       'ProxyDetail' => [],
       'PubproxyDetail' => [],
@@ -370,9 +371,11 @@ module InternetData
                         cert_subject_o cert_issuer_dn cert_browser_trusted tls_version first_seen last_seen],
       'DnsResolverDetail' => [],
       'BitTorrentDetail' => [],
+      'BotDetail' => [],
+      'UserAgentVerdict' => %i[agent kind verdict],
       'Location' => %i[continent continent_name country country_name timezone currency_code currency_name
                        currency_symbol flag_emoji flag_unicode],
-      'Asn' => %i[asn name domain type prefix],
+      'Asn' => %i[asn name domain type prefix country rpki_status],
       'Company' => %i[name domain],
       'AbuseContact' => %i[email],
       'Whois' => %i[id name org country status source domain abuse_email asn],

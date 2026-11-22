@@ -68,14 +68,14 @@ module InternetData
     include Answer
 
     FLAGS = %w[
-      is_vpn is_tor is_relay is_resproxy is_dcproxy is_mobproxy is_pubproxy is_hosting is_cdn is_anycast
-      is_carrier is_satellite is_ssh is_smtp is_web is_dns_resolver is_bittorrent
+      is_vpn is_tor is_relay is_resproxy is_dcproxy is_mobproxy is_pubproxy is_hosting is_cdn is_bot
+      is_anycast is_carrier is_satellite is_ssh is_smtp is_web is_dns_resolver is_bittorrent
     ].freeze
 
     # The detail object behind each flag that has one; `is_anycast` has none.
     DETAILS = %w[
-      vpn tor relay resproxy dcproxy mobproxy pubproxy hosting cdn carrier satellite ssh smtp dns_resolver
-      bittorrent
+      vpn tor relay resproxy dcproxy mobproxy pubproxy hosting cdn bot carrier satellite ssh smtp
+      dns_resolver bittorrent
     ].freeze
 
     # The details that are a list of rows rather than one object.
@@ -196,6 +196,18 @@ module InternetData
     # `is_cdn` with an absent member read as false.
     def cdn?
       @raw['is_cdn'] == true
+    end
+
+    # Whether an automated client uses the address (Bot IP): a search engine's or
+    # an AI company's crawler, an uptime monitor, an internet scanner or a
+    # webhook sender. Every answer; `bot` says whose.
+    def is_bot
+      @raw['is_bot']
+    end
+
+    # `is_bot` with an absent member read as false.
+    def bot?
+      @raw['is_bot'] == true
     end
 
     # Whether the address is announced from many places at once (Anycast IP).
@@ -327,6 +339,14 @@ module InternetData
     # Detail for `is_cdn`. Paid plans and the trial.
     def cdn
       @raw['cdn']
+    end
+
+    # Detail for `is_bot`: whose bot uses the address (`provider`,
+    # `provider_name`), its bots as their user agents name them (`agents`), what
+    # they do (`categories`) and whether the operator vouches for the address
+    # (`verified`, `identity`, `verified_by`). Paid plans and the trial.
+    def bot
+      @raw['bot']
     end
 
     # Detail for `is_carrier`. Paid plans and the trial.

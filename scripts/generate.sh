@@ -58,7 +58,7 @@ SELECT="${SELECT}:SshDetail:SmtpDetail:WebDetail:DnsResolverDetail:BitTorrentDet
 SELECT="${SELECT}:AbuseContact:Whois:Rwhois:HostedDomains:AsnLookupResponse:AsnPrefix:AsnHostedDomains:DomainLookupResponse"
 SELECT="${SELECT}:DomainDns:DnsAddressRecord:DnsMxRecord:DnsNsRecord:DnsCnameRecord:DomainIpRanges"
 SELECT="${SELECT}:DomainIpRange:DisposableDetail:DomainHost:CohostedDomains:DomainWeb:DomainWebLinks:DomainRedirects"
-SELECT="${SELECT}:DomainBacklinks:BatchLookupError"
+SELECT="${SELECT}:DomainBacklinks:BatchLookupError:BotDetail:UserAgentVerdict"
 SELECT="${SELECT}:Entitlement:EntitlementApikey:EntitlementPlan:EntitlementUsage"
 SELECT="${SELECT},supportingFiles,apiTests=false,modelTests=false,apiDocs=false,modelDocs=false"
 
