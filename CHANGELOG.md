@@ -2,6 +2,12 @@
 
 What each release changed for you, newest first. Each line is a commit's summary, linked to its full description and diff. Releases before 2.3.2 are described by their release commits.
 
+## 2.16.0 - 2026-11-22
+
+### Features
+
+- Read whether a bot uses an address, and whose: is_bot and bot ([`8eb8092`](https://github.com/internetdata/sdk-ruby/commit/8eb809267797c800ceac410b26c253649981cdb5))
+
 ## 2.15.0 - 2026-11-20
 
 ### Features
