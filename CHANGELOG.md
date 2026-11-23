@@ -2,6 +2,12 @@
 
 What each release changed for you, newest first. Each line is a commit's summary, linked to its full description and diff. Releases before 2.3.2 are described by their release commits.
 
+## 2.16.1 - 2026-11-23
+
+### Fixes
+
+- Re-pin the spec to 2026.11.22: whose bot an unverified address names ([`afa4b8a`](https://github.com/internetdata/sdk-ruby/commit/afa4b8a3e40e65a15ed72e0dfe87e56aac5f268d))
+
 ## 2.16.0 - 2026-11-22
 
 ### Features
