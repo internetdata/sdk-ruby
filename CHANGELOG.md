@@ -2,6 +2,16 @@
 
 What each release changed for you, newest first. Each line is a commit's summary, linked to its full description and diff. Releases before 2.3.2 are described by their release commits.
 
+## 2.17.0 - 2026-11-24
+
+### Features
+
+- Middleware: a condition on a list member matches when any element does ([`4959ee1`](https://github.com/internetdata/sdk-ruby/commit/4959ee1d6c96f43a9dccab350d922d2f28f4bf21))
+
+### Fixes
+
+- Re-pin the spec to 2026.11.23: every seen day is checked as a date ([`d873771`](https://github.com/internetdata/sdk-ruby/commit/d8737712ce2ab76aa5165695fa75b040139b652e))
+
 ## 2.16.1 - 2026-11-23
 
 ### Fixes
