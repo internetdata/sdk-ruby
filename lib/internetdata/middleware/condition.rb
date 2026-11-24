@@ -16,7 +16,14 @@ module InternetData
     #
     # A value may be a scalar (equality, strings without regard to case), an
     # Array meaning any-of, a Hash of `gte`/`gt`/`lte`/`lt` bounding a number,
-    # or a nested condition. A member set to `false` or `nil` is ignored
+    # or a nested condition. Against a member the answer holds as a list
+    # (`pubproxy.protocols`, the `web` rows) a term matches when any element
+    # does, and every member of a nested condition must match the same element:
+    #
+    #   { pubproxy: { protocols: 'socks5' } }
+    #   { web: { port: 443, status_code: { gte: 500 } } }
+    #
+    # A member set to `false` or `nil` is ignored
     # entirely - a condition states the positive signals you act on, so there is
     # no way to write "block when this is false", which would otherwise read as
     # blocking everybody.
@@ -110,8 +117,12 @@ module InternetData
 
       # An ABSENT member arrives here as nil, which is exactly what "not in your
       # plan" looks like. Every branch below must therefore reject it, which is
-      # what makes an unserved member fail a match rather than pass it.
+      # what makes an unserved member fail a match rather than pass it. A list
+      # the answer holds matches when one of its elements does, so an empty
+      # list matches nothing.
       def matches_value?(want, got)
+        return got.any? { |element| matches_value?(want, element) } if got.is_a?(Array)
+
         case want
         when Array then want.any? { |entry| matches_value?(entry, got) }
         when Hash
