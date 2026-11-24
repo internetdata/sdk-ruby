@@ -441,6 +441,80 @@ class ClientTest < Minitest::Test
     end
   end
 
+  # What a served seen day may not be: RFC 3339's full-date on a day its month
+  # has, and nothing looser.
+  NOT_DAYS = ['', 'monday', '2026-02-30', '2026-11-5', ' 2026-11-24', "2026-11-24\n", '2026-11-24T00:00:00Z',
+              '2026-11-24+05:00', 20_261_124].freeze
+
+  # The corpus answers populate 13 of the 23 seen days; these carry the rest.
+  SEEN_DAY = '2026-11-12'
+  SEEN_DAY_BODIES = {
+    'lookup' => TestHelper::CORPUS['lookup'].find { |c| c['name'] == 'paid-full-shape' }.fetch('body').merge(
+      'is_resproxy' => true, 'is_pubproxy' => true, 'is_ssh' => true, 'is_smtp' => true,
+      'resproxy' => { 'provider' => 'p', 'provider_name' => 'P', 'first_seen' => SEEN_DAY, 'last_seen' => SEEN_DAY,
+                      'hits' => 7, 'hits_days_pct' => 42, 'providers_num' => 2 },
+      'pubproxy' => { 'entry' => true, 'exit' => false, 'protocols' => ['socks5'], 'num_ports' => 1,
+                      'num_proxies' => 1, 'last_seen' => SEEN_DAY, 'last_usable' => '' },
+      'ssh' => { 'port' => 22, 'banner' => 'SSH-2.0-OpenSSH_9.6', 'host_key_fp' => 'SHA256:x', 'session_ok' => true,
+                 'first_seen' => SEEN_DAY, 'last_seen' => SEEN_DAY },
+      'smtp' => { 'port' => 25, 'banner' => '220 mx ESMTP', 'session_ok' => true, 'first_seen' => SEEN_DAY,
+                  'last_seen' => SEEN_DAY }
+    ),
+    'lookupDomain' => TestHelper::CORPUS['lookup'].find { |c| c['name'] == 'domain-paid-answer' }.fetch('body').then do |b|
+      b.merge('is_disposable' => true, 'dns' => b['dns'].merge('cname' => [{ 'target' => 'example.net', 'last_seen' => SEEN_DAY }]),
+              'disposable' => { 'confidence' => 'high', 'providers' => ['mailinator'], 'first_seen' => SEEN_DAY,
+                                'last_seen' => SEEN_DAY })
+    end,
+  }.freeze
+
+  SEEN_DAY_ROOTS = { 'lookup' => 'LookupResponse', 'lookupAsn' => 'AsnLookupResponse',
+                     'lookupDomain' => 'DomainLookupResponse' }.freeze
+
+  # Every seen day the spec types `format: date` (23 members since spec
+  # 2026.11.23) is checked as a full-date, a malformed one the retried
+  # server_error a member of the wrong type is, and a good one comes back as
+  # the served String: the answer's type did not move.
+  def test_a_seen_day_that_is_no_full_date_is_a_retried_server_error
+    schemas = YAML.safe_load_file(File.expand_path('../spec/openapi.yaml', __dir__)).dig('components', 'schemas')
+    bodies = TestHelper::CORPUS['lookup'].map { |c| [c['call'], c['body']] } + SEEN_DAY_BODIES.to_a
+    found = {}
+    bodies.each do |call, body|
+      seen_days(schemas, SEEN_DAY_ROOTS.fetch(call), body, []) { |path, member| found[member] ||= [call, body, path] }
+    end
+
+    assert_equal spec_seen_days(schemas).sort, found.keys.sort, 'every seen day the spec types as a date is served'
+    assert_operator found.size, :>=, 23, 'spec 2026.11.23 types 23 seen days as dates'
+    client = InternetData::Client.new(cache: false, retries: 1)
+    cases = found.values.each_with_index.map { |c, i| [*c, NOT_DAYS[i % NOT_DAYS.size]] }
+    vpn = found.fetch('ClassDetail.last_seen')
+    cases += NOT_DAYS.map { |bad| [*vpn, bad] }
+    cases.each do |call, body, path, bad|
+      served = JSON.parse(JSON.generate(body))
+      path[0..-2].reduce(served) { |node, key| node[key] }[path.last] = bad
+      sent = 0
+      Typhoeus.stub(%r{\A#{Regexp.escape(BASE_URL)}/}).and_return do
+        sent += 1
+        json_response(200, served)
+      end
+      name = "#{call} #{path.join('.')} of #{bad.inspect}"
+      error = assert_raises(InternetData::Error, name) { seen_day_call(client, call, served) }
+
+      assert_equal [:server_error, 200, 2], [error.kind, error.status, sent], "#{name}: #{error.message}"
+    ensure
+      Typhoeus::Expectation.clear
+    end
+    SEEN_DAY_BODIES.each do |call, body|
+      Typhoeus.stub(%r{\A#{Regexp.escape(BASE_URL)}/}).and_return { json_response(200, body) }
+      raw = seen_day_call(client, call, body).raw
+
+      seen_days(schemas, SEEN_DAY_ROOTS.fetch(call), body, []) do |path, _|
+        assert_equal body.dig(*path), raw.dig(*path), path.join('.')
+        assert_kind_of String, raw.dig(*path), path.join('.')
+      end
+      Typhoeus::Expectation.clear
+    end
+  end
+
   # A detail object requires no member: an empty one is present and empty under
   # a false flag, a populated one reads as served, and a null in a member the
   # spec does not require reads as absent.
@@ -963,5 +1037,50 @@ class ClientTest < Minitest::Test
     assert_equal :network, error.kind, "#{name}: #{error.message}"
     assert error.retryable?, "#{name}: a timeout is a transport failure, and worth retrying"
     assert_includes window, elapsed, "#{name} settled after #{elapsed.round(2)}s"
+  end
+
+  def seen_day_call(client, call, body)
+    case call
+    when 'lookup' then client.lookup(body['ip'])
+    when 'lookupAsn' then client.lookup_asn(body['asn'])
+    else client.lookup_domain(body['domain'])
+    end
+  end
+
+  def schema_ref(schema)
+    (schema['$ref'] || schema.dig('allOf', 0, '$ref'))&.split('/')&.last
+  end
+
+  # Yields the path to, and the schema member of, every `format: date` member
+  # the served value carries.
+  def seen_days(schemas, name, value, path, &block)
+    schemas.fetch(name).fetch('properties', {}).each do |member, schema|
+      next unless value.is_a?(Hash) && value.key?(member)
+
+      if schema['format'] == 'date' then yield path + [member], "#{name}.#{member}"
+      elsif (ref = schema_ref(schema)) then seen_days(schemas, ref, value[member], path + [member], &block)
+      elsif schema['type'] == 'array' && value[member].is_a?(Array) && (ref = schema_ref(schema['items'] || {}))
+        value[member].each_with_index { |entry, i| seen_days(schemas, ref, entry, path + [member, i], &block) }
+      end
+    end
+  end
+
+  # Every `format: date` member of a schema the three lookups' answers reach.
+  def spec_seen_days(schemas)
+    reached = []
+    todo = SEEN_DAY_ROOTS.values
+    until todo.empty?
+      name = todo.pop
+      next if reached.include?(name)
+
+      reached << name
+      schemas[name].fetch('properties', {}).each_value do |schema|
+        ref = schema_ref(schema) || schema_ref(schema['items'] || {})
+        todo << ref if ref
+      end
+    end
+    reached.flat_map do |name|
+      schemas[name].fetch('properties', {}).select { |_, schema| schema['format'] == 'date' }.keys.map { |m| "#{name}.#{m}" }
+    end
   end
 end
