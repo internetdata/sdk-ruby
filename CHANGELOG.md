@@ -2,6 +2,17 @@
 
 What each release changed for you, newest first. Each line is a commit's summary, linked to its full description and diff. Releases before 2.3.2 are described by their release commits.
 
+## 2.18.0 - 2026-11-25
+
+### Features
+
+- Send the user agent of the request you are deciding on with a lookup ([`9430a15`](https://github.com/internetdata/sdk-ruby/commit/9430a15448955acb1d6b553b4a46b69bea1aa412))
+- Middleware: allow_bots lets a crawler its operator vouches for through ([`66cc9e3`](https://github.com/internetdata/sdk-ruby/commit/66cc9e32d8115c0e0b2cddb57ccd931cccffa9da))
+
+### Fixes
+
+- Re-pin the spec to 2026.11.25: a paid field's description reads "On a paid plan" ([`97c89db`](https://github.com/internetdata/sdk-ruby/commit/97c89db52de409e253c871e5d4badae686109483))
+
 ## 2.17.0 - 2026-11-24
 
 ### Features
