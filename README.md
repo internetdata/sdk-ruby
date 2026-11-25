@@ -38,7 +38,7 @@ result.is_tor               # => false
 
 ### With an API key
 
-Every paid plan answers every field: the VPN, proxy, hosting and CDN flags as well, the detail behind each flag, and an address's city, Whois, RWHOIS and hosted domains. A free account tries every field. Create a key in the [console](https://app.internetdata.io), then pass it in:
+A paid plan answers every field: the VPN, proxy, hosting and CDN flags as well, the detail behind each flag, and an address's city, Whois, RWHOIS and hosted domains. A free account tries every field. Create a key in the [console](https://app.internetdata.io), then pass it in:
 
 ```ruby
 client = InternetData::Client.new(api_key: ENV['INTERNETDATA_API_KEY'])
@@ -76,8 +76,8 @@ Same answer `lookup` would give for that address, and the same cost against your
 
 ```ruby
 acct = client.my_entitlement
-acct.plan.key          # => "max"
-acct.plan.name         # => "Max", the name to show
+acct.plan.key          # => "data_4"
+acct.plan.name         # => "Data", the name to show
 acct.usage.requests    # => 580
 acct.usage.window_end  # => when the allowance resets
 ```
