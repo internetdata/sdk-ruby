@@ -2,6 +2,12 @@
 
 What each release changed for you, newest first. Each line is a commit's summary, linked to its full description and diff. Releases before 2.3.2 are described by their release commits.
 
+## 2.19.0 - 2026-11-26
+
+### Fixes
+
+- Read a keyless answer without the bot, carrier, satellite and service flags ([`8197458`](https://github.com/internetdata/sdk-ruby/commit/819745851ad4a9809cc23b5d6c329ec1ec4a49a4))
+
 ## 2.18.0 - 2026-11-25
 
 ### Features
