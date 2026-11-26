@@ -200,7 +200,8 @@ module InternetData
 
     # Whether an automated client uses the address (Bot IP): a search engine's or
     # an AI company's crawler, an uptime monitor, an internet scanner or a
-    # webhook sender. Every answer; `bot` says whose.
+    # webhook sender, or nil when your plan does not include it. Paid plans and
+    # the trial; `bot` says whose.
     def is_bot
       @raw['is_bot']
     end
@@ -221,8 +222,8 @@ module InternetData
       @raw['is_anycast'] == true
     end
 
-    # Whether the address is in a mobile carrier's address space (Carrier IP).
-    # Every answer.
+    # Whether the address is in a mobile carrier's address space (Carrier IP), or
+    # nil when your plan does not include it. Paid plans and the trial.
     def is_carrier
       @raw['is_carrier']
     end
@@ -233,7 +234,7 @@ module InternetData
     end
 
     # Whether the address is in a satellite operator's address space (Satellite
-    # IP). Every answer.
+    # IP), or nil when your plan does not include it. Paid plans and the trial.
     def is_satellite
       @raw['is_satellite']
     end
@@ -243,7 +244,8 @@ module InternetData
       @raw['is_satellite'] == true
     end
 
-    # Whether an SSH server answered on the address (SSH IP). Every answer.
+    # Whether an SSH server answered on the address (SSH IP), or nil when your
+    # plan does not include it. Paid plans and the trial.
     def is_ssh
       @raw['is_ssh']
     end
@@ -253,7 +255,8 @@ module InternetData
       @raw['is_ssh'] == true
     end
 
-    # Whether a mail server answered on the address (SMTP IP). Every answer.
+    # Whether a mail server answered on the address (SMTP IP), or nil when your
+    # plan does not include it. Paid plans and the trial.
     def is_smtp
       @raw['is_smtp']
     end
@@ -263,8 +266,8 @@ module InternetData
       @raw['is_smtp'] == true
     end
 
-    # Whether a web server answered on the address on port 80 or 443 (Web IP).
-    # Every answer.
+    # Whether a web server answered on the address on port 80 or 443 (Web IP), or
+    # nil when your plan does not include it. Paid plans and the trial.
     def is_web
       @raw['is_web']
     end
@@ -274,8 +277,8 @@ module InternetData
       @raw['is_web'] == true
     end
 
-    # Whether an open DNS resolver answered on the address (DNS Resolver IP).
-    # Every answer.
+    # Whether an open DNS resolver answered on the address (DNS Resolver IP), or
+    # nil when your plan does not include it. Paid plans and the trial.
     def is_dns_resolver
       @raw['is_dns_resolver']
     end
@@ -286,7 +289,8 @@ module InternetData
     end
 
     # Whether a BitTorrent client was seen on the address in the last 90 days
-    # (BitTorrent IP). Every answer.
+    # (BitTorrent IP), or nil when your plan does not include it. Paid plans and
+    # the trial.
     def is_bittorrent
       @raw['is_bittorrent']
     end
@@ -392,7 +396,8 @@ module InternetData
     end
 
     # The network announcing the address, from IP ASN, as a wire hash
-    # (`result.asn['name']`), with asn 0 where none does. Every answer.
+    # (`result.asn['name']`), with asn 0 where none does. Every answer; the
+    # network's type on paid plans and the trial.
     def asn
       @raw['asn']
     end

@@ -336,6 +336,9 @@ class ClientTest < Minitest::Test
 
   CLASS_DETAIL = { 'provider' => 'p', 'provider_name' => 'P', 'confidence' => 'high', 'last_seen' => '2026-11-13' }
                  .freeze
+  # The members Unlimited's answer leaves out, which the spec stopped requiring in 2026.11.26.
+  PLAN_FLAGS = %w[is_bot is_carrier is_satellite is_ssh is_smtp is_web is_dns_resolver is_bittorrent].freeze
+
   WRONG_TYPED = {
     'a flag of "yes"' => { 'is_tor' => 'yes' },
     'a flag of 1' => { 'is_vpn' => 1 },
@@ -355,7 +358,13 @@ class ClientTest < Minitest::Test
     'a latitude of "1"' => { 'location' => OK_BODY['location'].merge('latitude' => '1') },
     'a hosted_domains total of "3"' => { 'hosted_domains' => { 'total' => '3' } },
     'an ip of 5' => { 'ip' => 5 },
-  }.freeze
+    'an asn type of 1' => { 'asn' => OK_BODY['asn'].merge('type' => 1) },
+    'an asn type of null' => { 'asn' => OK_BODY['asn'].merge('type' => nil) },
+  }.merge(
+    PLAN_FLAGS.to_h { |flag| ["#{flag} of \"yes\"", { flag => 'yes' }] },
+    PLAN_FLAGS.to_h { |flag| ["#{flag} of 0", { flag => 0 }] },
+    PLAN_FLAGS.to_h { |flag| ["#{flag} of null", { flag => nil }] },
+  ).freeze
 
   ASN_WRONG_TYPED = {
     'an asn of "9009"' => { 'asn' => '9009' },
@@ -531,6 +540,40 @@ class ClientTest < Minitest::Test
     assert_equal [{}, [], nil, false], [one.vpn, one.web, one.is_cdn, one.cdn?]
     assert_equal partial, client.lookup('2.2.2.2').tor
     assert_equal({}, client.lookup_domain('example.com').disposable)
+  end
+
+  # Unlimited's answer carries none of the eight, nor the network's type: each reads
+  # absent, never false, on a lookup, my_ip and a batch entry alike, and reads as
+  # served where a plan carries it.
+  def test_the_members_a_plan_leaves_out_read_absent_and_read_as_served_where_present
+    without = OK_BODY.merge('asn' => OK_BODY['asn'].except('type'))
+    served = without.merge(PLAN_FLAGS.each_with_index.to_h { |flag, i| [flag, i.even?] })
+                    .merge('asn' => OK_BODY['asn'].merge('type' => 'hosting'))
+    stub_lookups('1.1.1.1' => { body: without }, '2.2.2.2' => { body: served.merge('ip' => '2.2.2.2') },
+                 'myip' => { body: without })
+    client = InternetData::Client.new(cache: false)
+
+    asked = {
+      'a lookup' => client.lookup('1.1.1.1'),
+      'my_ip' => client.my_ip,
+      'a batch entry' => client.lookup_batch(%w[1.1.1.1]).fetch('1.1.1.1'),
+    }
+    asked.each do |name, result|
+      assert_kind_of InternetData::Result, result, name
+      PLAN_FLAGS.each do |flag|
+        assert_nil result.public_send(flag), "#{name}: #{flag} is absent, not false"
+        refute result.included?(flag), "#{name}: #{flag} is not included"
+        assert_equal false, result.public_send(flag.delete_prefix('is_') + '?'), "#{name}: the predicate"
+      end
+      refute result.asn.key?('type'), "#{name}: asn type is absent"
+    end
+
+    result = client.lookup('2.2.2.2')
+    PLAN_FLAGS.each_with_index do |flag, i|
+      assert_equal i.even?, result.public_send(flag), flag
+      assert result.included?(flag), flag
+    end
+    assert_equal 'hosting', result.asn['type']
   end
 
   def test_a_batch_entry_of_the_wrong_type_is_that_addresses_error_alone
