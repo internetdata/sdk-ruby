@@ -2,6 +2,18 @@
 
 What each release changed for you, newest first. Each line is a commit's summary, linked to its full description and diff. Releases before 2.3.2 are described by their release commits.
 
+## 2.20.0 - 2026-11-28
+
+### Features
+
+- Hand back a vocabulary value as served ([`f6da76e`](https://github.com/internetdata/sdk-ruby/commit/f6da76ed6092f2415f0885568df92303938d5be3))
+- Middleware: allow_bots sends only a crawler's User-Agent, at most four an address ([`8ab8ca4`](https://github.com/internetdata/sdk-ruby/commit/8ab8ca4f306ea5f08438de197a893af56d726abd))
+
+### Fixes
+
+- Middleware: a condition on the verdict is no plan gap for a request that sent no agent ([`9bf9b64`](https://github.com/internetdata/sdk-ruby/commit/9bf9b64d5fbef74cb57808d4a6d1b876ee656da3))
+- Spec 2026.11.27: the free plan's trial is a window, never a UTC month ([`53fa151`](https://github.com/internetdata/sdk-ruby/commit/53fa151774781eca29f170746a30cedb9a1afb28))
+
 ## 2.19.0 - 2026-11-26
 
 ### Fixes
