@@ -2,6 +2,12 @@
 
 What each release changed for you, newest first. Each line is a commit's summary, linked to its full description and diff. Releases before 2.3.2 are described by their release commits.
 
+## 2.20.1 - 2026-11-28
+
+### Fixes
+
+- Refuse a timeout past 2147483 seconds where it is set, never on the first call ([`777a5a5`](https://github.com/internetdata/sdk-ruby/commit/777a5a5bbe2938fca40f53930d26187dd9735d0b))
+
 ## 2.20.0 - 2026-11-28
 
 ### Features
