@@ -10,9 +10,10 @@ module InternetData
   # serve one of them the other's shape. Errors are never stored and bogons
   # never reach it.
   #
-  # A reduced answer, a spent trial's or a reached cap's, ends with a new UTC
-  # month or a raised cap, so it stays a minute at most rather than the TTL. It
-  # is still cached, or a busy process would send every repeat to the API.
+  # A reduced answer, a spent trial's or a reached cap's, ends with the
+  # allowance's window (on the free plan, its trial's) or a raised cap, so it
+  # stays a minute at most rather than the TTL. It is still cached, or a busy
+  # process would send every repeat to the API.
   class Cache
     # The longest a spent trial's or a reached cap's answer is held, in seconds.
     REDUCED_TTL = 60
