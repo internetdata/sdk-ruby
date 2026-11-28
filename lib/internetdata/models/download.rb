@@ -272,10 +272,6 @@ module InternetData
     # Custom attribute writer method checking allowed values (enum).
     # @param [Object] outcome Object to be assigned
     def outcome=(outcome)
-      validator = EnumAttributeValidator.new('String', ["ok", "unauthorized", "denied", "expired", "unknown", "unavailable"])
-      unless validator.valid?(outcome)
-        fail ArgumentError, "invalid value for \"outcome\", must be one of #{validator.allowable_values}."
-      end
       @outcome = outcome
     end
 

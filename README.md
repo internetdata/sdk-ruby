@@ -84,6 +84,8 @@ acct.usage.window_end  # => when the allowance resets
 
 Usage counts against the anniversary of your subscription on a paid plan, not the calendar month and not the billing period, and against its trial on the free plan; it is the same number a lookup is gated on. `hard_limit` is `nil` on an uncapped plan, which is not the same as zero.
 
+Show `plan.name` and compare against `plan.key`: a plan's name can change, and its key never does. A value the API adds later to a plan's `tier`, a database's `standing` or `license_type`, a format or a download's `outcome` comes back as the string it served (from 2.20.0), so check for the values you know rather than assuming the list is complete.
+
 ### Is that crawler who it says it is?
 
 Pass the `User-Agent` of the request you are deciding on, and with every field (a paid plan, or a free account's trial) the answer says whose agent it names and whether this address bears that out:

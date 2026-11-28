@@ -170,10 +170,6 @@ module InternetData
     # Custom attribute writer method checking allowed values (enum).
     # @param [Object] tier Object to be assigned
     def tier=(tier)
-      validator = EnumAttributeValidator.new('String', ["free", "starter", "scale", "max"])
-      unless validator.valid?(tier)
-        fail ArgumentError, "invalid value for \"tier\", must be one of #{validator.allowable_values}."
-      end
       @tier = tier
     end
 

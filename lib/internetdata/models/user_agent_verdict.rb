@@ -170,10 +170,6 @@ module InternetData
     # Custom attribute writer method checking allowed values (enum).
     # @param [Object] verdict Object to be assigned
     def verdict=(verdict)
-      validator = EnumAttributeValidator.new('String', ["verified", "spoofed", "unverifiable", "not_bot"])
-      unless validator.valid?(verdict)
-        fail ArgumentError, "invalid value for \"verdict\", must be one of #{validator.allowable_values}."
-      end
       @verdict = verdict
     end
 
